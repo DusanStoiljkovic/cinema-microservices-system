@@ -7,7 +7,6 @@ import (
 	"user-service/internal/dto"
 	"user-service/internal/models"
 	"user-service/internal/services"
-	"user-service/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
@@ -85,15 +84,12 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	existedUser, err := h.service.GetUserByFilter(r.Context(), &models.User{Email: request.Email})
+	err = h.service.Login(r.Context(), &models.User{
+		Email:    request.Email,
+		Password: request.Password,
+	})
 	if err != nil {
-		http.Error(w, "invalid credentials", http.StatusBadRequest)
-		return
-	}
-
-	err = utils.VerifyPassword(existedUser.Password, request.Password)
-	if err != nil {
-		http.Error(w, "invalid credentials", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

@@ -32,8 +32,8 @@ func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*m
 	return user, nil
 }
 
-func (s *UserService) Register(ctx context.Context, req *models.User) (*models.User, error) {
-	_, err := s.repo.GetUserByFilter(ctx, &models.User{Email: req.Email})
+func (s *UserService) Register(ctx context.Context, user *models.User) (*models.User, error) {
+	_, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
 	if err == nil {
 		return nil, fmt.Errorf("user already exists")
 	}
@@ -42,18 +42,33 @@ func (s *UserService) Register(ctx context.Context, req *models.User) (*models.U
 		return nil, err
 	}
 
-	hashedPassword, err := utils.HashedPassword(req.Password)
+	hashedPassword, err := utils.HashedPassword(user.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Password = hashedPassword
-	req.Role = "user"
+	user.Password = hashedPassword
+	user.Role = "user"
 
-	user, err := s.repo.Create(ctx, req)
+	createdUser, err := s.repo.Create(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
-	return user, nil
+	return createdUser, nil
+}
+
+func (s *UserService) Login(ctx context.Context, user *models.User) error {
+	existedUser, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
+	if err != nil {
+		return errors.New("Invalid Credentials")
+	}
+
+	err = utils.VerifyPassword(existedUser.Password, user.Password)
+	if err != nil {
+		return errors.New("Invalid Credentials")
+	}
+
+	return nil
+
 }
