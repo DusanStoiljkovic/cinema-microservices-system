@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+	"fmt"
 	"user-service/internal/models"
 	"user-service/internal/repository"
 	"user-service/internal/utils"
+
+	"gorm.io/gorm"
 )
 
 var (
@@ -22,7 +24,7 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 }
 
 func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*models.User, error) {
-	user, err := s.GetUserByFilter(ctx, req)
+	user, err := s.repo.GetUserByFilter(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -32,11 +34,11 @@ func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*m
 
 func (s *UserService) Register(ctx context.Context, req *models.User) (*models.User, error) {
 	_, err := s.repo.GetUserByFilter(ctx, &models.User{Email: req.Email})
-	if err != nil {
-		return nil, ErrEmailInUse
+	if err == nil {
+		return nil, fmt.Errorf("user already exists")
 	}
 
-	if !errors.Is(err, sql.ErrNoRows) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
@@ -46,6 +48,7 @@ func (s *UserService) Register(ctx context.Context, req *models.User) (*models.U
 	}
 
 	req.Password = hashedPassword
+	req.Role = "user"
 
 	user, err := s.repo.Create(ctx, req)
 	if err != nil {

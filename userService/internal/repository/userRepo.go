@@ -16,14 +16,14 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 }
 
 func (r *UserRepository) GetUserByFilter(ctx context.Context, filter *models.User) (*models.User, error) {
-	var user models.User
+	user := &models.User{}
 
-	err := r.db.WithContext(ctx).Where(filter).First(&user).Error
+	err := r.db.WithContext(ctx).Where(filter).First(user).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *models.User) (*models.User, error) {

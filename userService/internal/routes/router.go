@@ -13,6 +13,8 @@ func RegisterRouter(UserHandler *handlers.UserHandler) http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
 			r.Get("/{id}", UserHandler.GetUserByID)
+			r.Post("/register", UserHandler.RegisterUser)
+			r.Post("/login", UserHandler.LoginUser)
 		})
 	})
 
