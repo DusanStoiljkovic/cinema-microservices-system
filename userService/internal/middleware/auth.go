@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"sync"
@@ -13,6 +14,21 @@ var (
 	clients = make(map[string]time.Time)
 	mu      sync.Mutex
 )
+
+// LOGGING MIDDLEWARE
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		next.ServeHTTP(w, r)
+
+		fmt.Printf("%s %s %v\n",
+			r.Method,
+			r.URL.Path,
+			time.Since(start),
+		)
+	})
+}
 
 // JWT TOKEN LOGIC
 func JwtAuthMiddleware(next http.Handler) http.Handler {
