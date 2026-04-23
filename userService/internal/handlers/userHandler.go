@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"user-service/internal/dto"
+	"user-service/internal/middleware"
 	"user-service/internal/models"
 	"user-service/internal/services"
 
@@ -93,7 +95,13 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	token, err := middleware.CreateToken(request.Email)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "JWT TOKEN 412nemkodsanaook3n1"}`))
+	w.Write([]byte(fmt.Sprintf(`{"JWT": "%s"}`, token)))
 }
