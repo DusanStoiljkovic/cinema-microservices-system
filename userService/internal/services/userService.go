@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 	"user-service/internal/models"
 	"user-service/internal/repository"
 	"user-service/internal/utils"
@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrEmailInUse = errors.New("email already in use")
+	ErrUserAlreadyExists = errors.New("user already exists")
 )
 
 type UserService struct {
@@ -35,7 +35,7 @@ func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*m
 func (s *UserService) Register(ctx context.Context, user *models.User) (*models.User, error) {
 	_, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
 	if err == nil {
-		return nil, fmt.Errorf("user already exists")
+		return nil, errors.New(ErrUserAlreadyExists.Error())
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -58,17 +58,18 @@ func (s *UserService) Register(ctx context.Context, user *models.User) (*models.
 	return createdUser, nil
 }
 
-func (s *UserService) Login(ctx context.Context, user *models.User) error {
+func (s *UserService) Login(ctx context.Context, user *models.User) (*models.User, error) {
 	existedUser, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
 	if err != nil {
-		return errors.New("Invalid Credentials")
+		return nil, errors.New("Invalid Credentials")
 	}
 
 	err = utils.VerifyPassword(existedUser.Password, user.Password)
 	if err != nil {
-		return errors.New("Invalid Credentials")
+		return nil, errors.New("Invalid Credentials")
 	}
 
-	return nil
+	log.Print("User registered: %s", user.Email)
+	return user, nil
 
 }

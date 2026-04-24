@@ -24,7 +24,11 @@ func NewUserHandler(service *services.UserService) *UserHandler {
 
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	userID, _ := strconv.Atoi(idParam)
+	userID, err := strconv.Atoi(idParam)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusBadRequest)
+		return
+	}
 
 	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: uint(userID)})
 	if err != nil {
@@ -61,7 +65,7 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Email: request.Email,
 	})
 	if err == nil {
-		http.Error(w, "user already exists", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -75,7 +79,11 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(&user)
+	json.NewEncoder(w).Encode(&dto.UserResponse{
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+	})
 }
 
 func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +94,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	err = h.service.Login(r.Context(), &models.User{
+	user, err := h.service.Login(r.Context(), &models.User{
 		Email:    request.Email,
 		Password: request.Password,
 	})
@@ -95,7 +103,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := middleware.CreateToken(request.Email)
+	token, err := middleware.CreateToken(user.Email)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
