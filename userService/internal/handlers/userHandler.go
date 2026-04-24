@@ -29,7 +29,6 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return secure.NewAuthFailed("Invalid user ID", err, nil)
 	}
-	userID, _ := strconv.Atoi(idParam)
 
 	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: uint(userID)})
 	if err != nil {
@@ -56,17 +55,14 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) error
 
 	err = validate.Struct(request)
 	if err != nil {
-		validationErrors := err.(validator.ValidationErrors)
-		http.Error(w, validationErrors.Error(), http.StatusBadRequest)
-		return
+		return secure.NewAuthFailed("Validation failed", err, nil)
 	}
 
 	_, err = h.service.GetUserByFilter(r.Context(), &models.User{
 		Email: request.Email,
 	})
 	if err == nil {
-		http.Error(w, "user already exists", http.StatusBadRequest)
-		return
+		return secure.NewAuthFailed("User already exist", err, nil)
 	}
 
 	user, err := h.service.Register(r.Context(), &models.User{
@@ -78,7 +74,8 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	json.NewEncoder(w).Encode(&user)
+	utils.WriteJSON(w, http.StatusOK, user)
+	return nil
 }
 
 func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
@@ -103,11 +100,13 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
 
 	token, err := middleware.CreateToken(request.Email)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
+		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(`{"JWT": "%s"}`, token)))
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"JWT": token,
+	})
+
+	return nil
+
 }

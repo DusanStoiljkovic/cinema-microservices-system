@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 	"user-service/internal/models"
 	"user-service/internal/repository"
 	"user-service/internal/utils"
@@ -36,7 +36,7 @@ func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*m
 func (s *UserService) Register(ctx context.Context, user *models.User) (*models.User, error) {
 	_, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
 	if err == nil {
-		return nil, errors.New(ErrUserAlreadyExists.Error())
+		return nil, secure.NewAuthFailed("User already exist", err, nil)
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -63,15 +63,15 @@ func (s *UserService) Register(ctx context.Context, user *models.User) (*models.
 func (s *UserService) Login(ctx context.Context, user *models.User) error {
 	existedUser, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
 	if err != nil {
-		return nil, errors.New("Invalid Credentials")
+		return secure.NewAuthFailed("Invalid credentials", err, nil)
 	}
 
 	err = utils.VerifyPassword(existedUser.Password, user.Password)
 	if err != nil {
-		return nil, errors.New("Invalid Credentials")
+		return secure.NewAuthFailed("Invalid credentials", err, nil)
 	}
 
 	log.Print("User registered: %s", user.Email)
-	return user, nil
+	return nil
 
 }
