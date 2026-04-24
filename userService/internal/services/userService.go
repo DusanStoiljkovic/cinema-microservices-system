@@ -7,6 +7,7 @@ import (
 	"user-service/internal/models"
 	"user-service/internal/repository"
 	"user-service/internal/utils"
+	"user-service/secure"
 
 	"gorm.io/gorm"
 )
@@ -35,7 +36,7 @@ func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*m
 func (s *UserService) Register(ctx context.Context, user *models.User) (*models.User, error) {
 	_, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
 	if err == nil {
-		return nil, fmt.Errorf("user already exists")
+		return nil, errors.New(ErrUserAlreadyExists.Error())
 	}
 
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -55,20 +56,22 @@ func (s *UserService) Register(ctx context.Context, user *models.User) (*models.
 		return nil, err
 	}
 
+	log.Printf("User registered: %s", user.Email)
 	return createdUser, nil
 }
 
 func (s *UserService) Login(ctx context.Context, user *models.User) error {
 	existedUser, err := s.repo.GetUserByFilter(ctx, &models.User{Email: user.Email})
 	if err != nil {
-		return errors.New("Invalid Credentials")
+		return nil, errors.New("Invalid Credentials")
 	}
 
 	err = utils.VerifyPassword(existedUser.Password, user.Password)
 	if err != nil {
-		return errors.New("Invalid Credentials")
+		return nil, errors.New("Invalid Credentials")
 	}
 
-	return nil
+	log.Print("User registered: %s", user.Email)
+	return user, nil
 
 }
