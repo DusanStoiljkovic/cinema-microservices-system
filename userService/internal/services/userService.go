@@ -22,7 +22,7 @@ func NewUserService(repo UserRepository) *UserService {
 }
 
 func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*models.User, error) {
-	user, err := s.repo.GetUserByFilter(ctx, &dto.UserFilter{Name: &req.Name, Email: &req.Email})
+	user, err := s.repo.GetUserByFilter(ctx, &dto.UserFilter{ID: &req.ID, Name: &req.Name, Email: &req.Email})
 	if err != nil {
 		return nil, err
 	}

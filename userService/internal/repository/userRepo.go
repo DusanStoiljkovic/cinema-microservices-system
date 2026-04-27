@@ -25,11 +25,11 @@ func (r *UserRepository) GetUserByFilter(ctx context.Context, filter *dto.UserFi
 		query = query.Where("id = ?", *filter.ID)
 	}
 
-	if filter.Email != nil {
+	if filter.Email != nil && *filter.Email != "" {
 		query = query.Where("email = ?", *filter.Email)
 	}
 
-	if filter.Name != nil {
+	if filter.Name != nil && *filter.Name != "" {
 		query = query.Where("name = ?", *filter.Name)
 	}
 
