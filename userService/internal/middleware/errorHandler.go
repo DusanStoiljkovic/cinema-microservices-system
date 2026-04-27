@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"user-service/internal/secure"
 	"user-service/internal/utils"
-	"user-service/secure"
 )
 
 func ErrorHandler(next AppHandler) http.HandlerFunc {

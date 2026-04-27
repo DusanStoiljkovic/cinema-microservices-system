@@ -6,8 +6,8 @@ import (
 	"log"
 	"user-service/internal/models"
 	"user-service/internal/repository"
+	"user-service/internal/secure"
 	"user-service/internal/utils"
-	"user-service/secure"
 
 	"gorm.io/gorm"
 )

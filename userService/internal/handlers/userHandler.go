@@ -7,9 +7,9 @@ import (
 	"user-service/internal/dto"
 	"user-service/internal/middleware"
 	"user-service/internal/models"
+	"user-service/internal/secure"
 	"user-service/internal/services"
 	"user-service/internal/utils"
-	"user-service/secure"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
