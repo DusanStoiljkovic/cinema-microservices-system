@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -8,18 +9,23 @@ import (
 	"user-service/internal/middleware"
 	"user-service/internal/models"
 	"user-service/internal/secure"
-	"user-service/internal/services"
 	"user-service/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 )
 
-type UserHandler struct {
-	service *services.UserService
+type UserService interface {
+	GetUserByFilter(ctx context.Context, req *models.User) (*models.User, error)
+	Register(ctx context.Context, user *models.User) (*models.User, error)
+	Login(ctx context.Context, user *models.User) (*models.User, error)
 }
 
-func NewUserHandler(service *services.UserService) *UserHandler {
+type UserHandler struct {
+	service UserService
+}
+
+func NewUserHandler(service UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
@@ -58,13 +64,6 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) error
 		return secure.NewAuthFailed("Validation failed", err, nil)
 	}
 
-	_, err = h.service.GetUserByFilter(r.Context(), &models.User{
-		Email: request.Email,
-	})
-	if err == nil {
-		return secure.NewAuthFailed("User already exist", err, nil)
-	}
-
 	user, err := h.service.Register(r.Context(), &models.User{
 		Name:     request.Name,
 		Email:    request.Email,
@@ -90,7 +89,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
 		)
 	}
 
-	err = h.service.Login(r.Context(), &models.User{
+	_, err = h.service.Login(r.Context(), &models.User{
 		Email:    request.Email,
 		Password: request.Password,
 	})

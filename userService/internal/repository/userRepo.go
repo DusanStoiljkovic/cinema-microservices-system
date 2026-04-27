@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"user-service/internal/dto"
 	"user-service/internal/models"
 
 	"gorm.io/gorm"
@@ -15,10 +16,24 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) GetUserByFilter(ctx context.Context, filter *models.User) (*models.User, error) {
+func (r *UserRepository) GetUserByFilter(ctx context.Context, filter *dto.UserFilter) (*models.User, error) {
 	user := &models.User{}
 
-	err := r.db.WithContext(ctx).Where(filter).First(user).Error
+	query := r.db.WithContext(ctx).Model(&models.User{})
+
+	if filter.ID != nil {
+		query = query.Where("id = ?", *filter.ID)
+	}
+
+	if filter.Email != nil {
+		query = query.Where("email = ?", *filter.Email)
+	}
+
+	if filter.Name != nil {
+		query = query.Where("name ILIKE?", *filter.Name)
+	}
+
+	err := query.First(user).Error
 	if err != nil {
 		return nil, err
 	}
