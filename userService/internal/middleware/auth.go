@@ -1,40 +1,82 @@
 package middleware
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
+var (
+	clients = make(map[string]time.Time)
+	mu      sync.Mutex
+)
+
+const (
+	EmailKey  ContextKey = "email"
+	UserIDKey ContextKey = "userID"
+)
+
+type ContextKey string
+
+// LOGGING MIDDLEWARE
+func LoggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		next.ServeHTTP(w, r)
+
+		fmt.Printf("%s %s %v\n",
+			r.Method,
+			r.URL.Path,
+			time.Since(start),
+		)
+	})
+}
+
+// JWT TOKEN LOGIC
 func JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
-		_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		claims := jwt.MapClaims{}
+		_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(os.Getenv("SECRET_KEY")), nil
 		})
-
 		if err != nil {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
 
-		next.ServeHTTP(w, r)
+		fmt.Println("Claims:", claims)
+
+		email, _ := claims["email"].(string)
+		userID, _ := claims[string(UserIDKey)].(float64)
+
+		ctx = context.WithValue(ctx, EmailKey, email)
+		ctx = context.WithValue(ctx, UserIDKey, uint(userID))
+
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func CreateToken(email string) (string, error) {
+func CreateToken(ID uint, email string) (string, error) {
 	token := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"email": email,
-			"exp":   time.Now().Add(time.Hour * 24).Unix(),
+			"userID": ID,
+			"email":  email,
+			"exp":    time.Now().Add(time.Hour * 1).Unix(),
 		})
 
 	tokenString, err := token.SignedString([]byte(os.Getenv("SECRET_KEY")))
@@ -43,4 +85,33 @@ func CreateToken(email string) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+// AUTHENTICATION MIDDLEWARE
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiKey := r.Header.Get("X-API-Key")
+		if apiKey != os.Getenv("SECRET_KEY") {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// THROTTLE AUTH MIDDLEWARE
+func ThrottleMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		ip := r.RemoteAddr
+		if lastRequest, found := clients[ip]; found && time.Since(lastRequest) < time.Second {
+			http.Error(w, "To many requests", http.StatusTooManyRequests)
+			return
+		}
+
+		clients[ip] = time.Now()
+		next.ServeHTTP(w, r)
+	})
 }

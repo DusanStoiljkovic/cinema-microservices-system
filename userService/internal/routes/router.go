@@ -13,12 +13,13 @@ func RegisterRouter(UserHandler *handlers.UserHandler) http.Handler {
 
 	r.Group(func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
-			r.Post("/register", UserHandler.RegisterUser)
-			r.Post("/login", UserHandler.LoginUser)
+			r.Post("/register", middleware.ErrorHandler(UserHandler.RegisterUser))
+			r.Post("/login", middleware.ErrorHandler(UserHandler.LoginUser))
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.JwtAuthMiddleware)
-				r.Get("/{id}", UserHandler.GetUserByID)
+				r.Get("/me", middleware.ErrorHandler(UserHandler.GetMe))
+				r.Get("/{id}", middleware.ErrorHandler(UserHandler.GetUserByID))
 			})
 		})
 	})
