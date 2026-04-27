@@ -29,6 +29,31 @@ func NewUserHandler(service UserService) *UserHandler {
 	return &UserHandler{service: service}
 }
 
+func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+
+	//const requestIDKey ContextKey = "requestID"
+
+	userID, ok := ctx.Value(middleware.UserIDKey).(uint)
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return nil
+	}
+
+	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: userID})
+	if err != nil {
+		return secure.NewAuthFailed(err.Error(), err, nil)
+	}
+
+	json.NewEncoder(w).Encode(&dto.UserResponse{
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+	})
+
+	return nil
+}
+
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) error {
 	idParam := chi.URLParam(r, "id")
 	userID, err := strconv.Atoi(idParam)
@@ -89,7 +114,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
 		)
 	}
 
-	_, err = h.service.Login(r.Context(), &models.User{
+	user, err := h.service.Login(r.Context(), &models.User{
 		Email:    request.Email,
 		Password: request.Password,
 	})
@@ -97,7 +122,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	token, err := middleware.CreateToken(request.Email)
+	token, err := middleware.CreateToken(user.ID, user.Email)
 	if err != nil {
 		return err
 	}

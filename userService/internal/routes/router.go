@@ -18,6 +18,7 @@ func RegisterRouter(UserHandler *handlers.UserHandler) http.Handler {
 
 			r.Group(func(r chi.Router) {
 				r.Use(middleware.JwtAuthMiddleware)
+				r.Get("/me", middleware.ErrorHandler(UserHandler.GetMe))
 				r.Get("/{id}", middleware.ErrorHandler(UserHandler.GetUserByID))
 			})
 		})
