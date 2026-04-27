@@ -2,12 +2,7 @@ package services
 
 import (
 	"context"
-<<<<<<< HEAD
-	"errors"
-	"log"
-=======
 	"user-service/internal/dto"
->>>>>>> userService/feature/middleware
 	"user-service/internal/models"
 	"user-service/internal/secure"
 	"user-service/internal/utils"
