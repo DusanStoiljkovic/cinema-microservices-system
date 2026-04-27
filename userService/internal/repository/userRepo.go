@@ -30,7 +30,7 @@ func (r *UserRepository) GetUserByFilter(ctx context.Context, filter *dto.UserFi
 	}
 
 	if filter.Name != nil {
-		query = query.Where("name ILIKE?", *filter.Name)
+		query = query.Where("name = ?", *filter.Name)
 	}
 
 	err := query.First(user).Error
