@@ -1,0 +1,109 @@
+services:
+  # API GATEWAY
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - user-service
+      # - movie-service
+      # - booking-service
+    env_file:
+      - ./api-gateway/api-gateway.env
+    networks:
+      - cinema-network
+
+  # USER SERVICE + DB
+  user-db:
+    image: mysql:8.0
+    container_name: user-db
+    restart: always
+    env_file:
+      - ./user-service/user-service.env
+    volumes:
+      - user-db-data:/var/lib/mysql
+    networks:
+      - cinema-network
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    depends_on:
+      - user-db
+    env_file:
+      - ./user-service/user-service.env
+    networks:
+      - cinema-network
+
+  # # MOVIE SERVICE + DB
+  # movie-db:
+  #   image: mysql:8.0
+  #   container_name: movie-db
+  #   restart: always
+  #   env_file:
+  #     - ./movieService/movie-service.env
+  #   volumes:
+  #     - movie-db-data:/var/lib/mysql
+  #   networks:
+  #     - cinema-network
+
+  # movie-service:
+  #   build: ./movie-service
+  #   container_name: movie-service
+  #   depends_on:
+  #     - movie-db
+  #   env_file:
+  #     - ./movieService/movie-service.env
+  #   networks:
+  #     - cinema-network
+
+  # # BOOKING SERVICE + DB
+  # booking-db:
+  #   image: mysql:8.0
+  #   container_name: booking-db
+  #   restart: always
+  #   env_file:
+  #     - ./bookingService/booking-service.env
+  #   volumes:
+  #     - booking-db-data:/var/lib/mysql
+  #   networks:
+  #     - cinema-network
+
+  # booking-service:
+  #   build: ./booking-service
+  #   container_name: booking-service
+  #   depends_on:
+  #     - booking-db
+  #     - nats
+  #     - redis
+  #   env_file:
+  #     - ./bookingService/booking-service.env
+  #   networks:
+  #     - cinema-network
+
+  # REDIS
+  redis:
+    image: redis:latest
+    container_name: redis
+    networks:
+      - cinema-network
+
+  # NATS
+  nats:
+    image: nats:latest
+    container_name: nats
+    ports:
+      - "4222:4222"
+    networks:
+      - cinema-network
+
+# NETWORK
+networks:
+  cinema-network:
+
+# VOLUMES
+volumes:
+  user-db-data:
+  # movie-db-data:
+  # booking-db-data:

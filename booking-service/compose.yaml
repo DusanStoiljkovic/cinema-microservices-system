@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  booking-db:
+    image: mysql:8.0
+    container_name: booking-db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "3309:3306"
+    volumes:
+      - booking_db_data:/var/lib/mysql
+
+  booking-service:
+    build: .
+    container_name: booking-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - booking-db
+    env_file:
+      - .env
+
+volumes:
+  booking_db_data:
