@@ -15,6 +15,7 @@ func main() {
 	db, err := db.Connect()
 	if err != nil {
 		log.Println("Database not connected")
+		return
 	}
 
 	// repos
@@ -29,7 +30,7 @@ func main() {
 	// router
 	r := routes.RegisterRouter(userHandler)
 
-	log.Print("Server is running on :8080")
-	http.ListenAndServe(":8080", r)
+	log.Print("Server is running on :8081")
+	http.ListenAndServe(":8081", r)
 
 }
