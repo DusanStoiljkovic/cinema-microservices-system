@@ -93,7 +93,10 @@ func (p *ProxyHandler) createRequest(r *http.Request, target *url.URL, prefix st
 	outURL := *r.URL
 	outURL.Scheme = target.Scheme
 	outURL.Host = target.Host
-	outURL.Path = r.URL.Path
+
+	path := strings.TrimPrefix(r.URL.Path, "/api")
+
+	outURL.Path = path
 
 	req, err := http.NewRequestWithContext(
 		r.Context(),
