@@ -58,8 +58,6 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		fmt.Println("Claims:", claims)
-
 		email, _ := claims["email"].(string)
 		userID, _ := claims[string(UserIDKey)].(float64)
 

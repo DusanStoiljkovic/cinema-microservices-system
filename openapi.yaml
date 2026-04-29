@@ -1,0 +1,266 @@
+openapi: 3.0.3
+info:
+  title: Cinema Distributed System API
+  version: 1.0.0
+  description: API Gateway for Cinema Microservices System
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+
+  # USER SERVICE
+
+  /api/users/register:
+    post:
+      summary: Register user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        200:
+          description: User created
+
+  /api/users/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: JWT token
+
+  /api/users/me:
+    get:
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: User info
+
+  /api/users/{id}:
+    get:
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: User
+
+  # MOVIE SERVICE
+
+  /api/movies:
+    get:
+      summary: Get all movies
+      responses:
+        200:
+          description: List of movies
+
+    post:
+      summary: Create movie
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Movie'
+      responses:
+        201:
+          description: Created
+
+  /api/movies/{id}:
+    get:
+      summary: Get movie by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Movie
+
+    put:
+      summary: Update movie
+      responses:
+        200:
+          description: Updated
+
+    delete:
+      summary: Delete movie
+      responses:
+        204:
+          description: Deleted
+
+  # GENRES
+
+  /api/genres:
+    get:
+      summary: Get genres
+      responses:
+        200:
+          description: List
+
+    post:
+      summary: Create genre
+      responses:
+        201:
+          description: Created
+
+  # BOOKING SERVICE
+
+  /api/tickets:
+    post:
+      summary: Create ticket
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+      responses:
+        201:
+          description: Ticket created
+
+  /api/tickets/{id}:
+    get:
+      summary: Get ticket
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Ticket
+
+  /api/theaters:
+    get:
+      summary: Get theaters
+      responses:
+        200:
+          description: List
+
+    post:
+      summary: Create theater
+      responses:
+        201:
+          description: Created
+
+  /api/schedules:
+    get:
+      summary: Get schedules
+      responses:
+        200:
+          description: List
+
+    post:
+      summary: Create schedule
+      responses:
+        201:
+          description: Created
+
+  # RECOMMENDATION
+
+  /api/recommendations/{userId}:
+    get:
+      summary: Get recommendations
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Recommendations
+
+  /api/watch-history:
+    post:
+      summary: Add watch history
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WatchHistory'
+      responses:
+        201:
+          description: Added
+
+# COMPONENTS
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    Movie:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        duration:
+          type: integer
+        release_date:
+          type: string
+          format: date
+        image_url:
+          type: string
+
+    Ticket:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        schedule_id:
+          type: integer
+        seat_id:
+          type: integer
+
+    WatchHistory:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        movie_id:
+          type: integer
+        rating:
+          type: integer
