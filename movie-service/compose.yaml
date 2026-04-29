@@ -6,7 +6,7 @@ services:
     container_name: movie-db
     restart: always
     env_file:
-      - .env
+      - ./movie-service.env
     ports:
       - "3308:3306"
     volumes:
@@ -20,7 +20,7 @@ services:
     depends_on:
       - movie-db
     env_file:
-      - .env
+      - ./movie-service.env
 
 volumes:
   movie_db_data:

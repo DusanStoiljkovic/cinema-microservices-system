@@ -14,7 +14,7 @@ func main() {
 
 	db, err := db.Connect()
 	if err != nil {
-		log.Println("Database not connected")
+		log.Println("User Database not connected")
 		return
 	}
 
