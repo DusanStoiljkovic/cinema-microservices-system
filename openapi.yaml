@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Cinema Distributed System API
+  title: Cinema Microservices System API
   version: 1.0.0
   description: API Gateway for Cinema Microservices System
 
