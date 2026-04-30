@@ -98,7 +98,11 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, user)
+	utils.WriteJSON(w, http.StatusOK, dto.UserResponse{
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: user.CreatedAt,
+	})
 	return nil
 }
 
