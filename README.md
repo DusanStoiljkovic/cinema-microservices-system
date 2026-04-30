@@ -1,1 +1,1 @@
-# cinema-distributed-system
+# cinema
