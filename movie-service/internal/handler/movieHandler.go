@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+<<<<<<< HEAD
+=======
+	"movie-service/internal/dto"
+	"movie-service/internal/mapper"
+>>>>>>> feature/movieService
 	"movie-service/internal/models"
 	servicepkg "movie-service/internal/service"
 	"movie-service/utils"
@@ -14,7 +19,12 @@ import (
 )
 
 type MovieService interface {
+<<<<<<< HEAD
 	GetMovies(ctx context.Context,
+=======
+	GetMovies(
+		ctx context.Context,
+>>>>>>> feature/movieService
 		limit, offset int,
 		sort string,
 		genre string,
@@ -35,7 +45,27 @@ func NewMovieHandler(service MovieService) *MovieHandler {
 }
 
 func (handler *MovieHandler) HandleGetMovies(w http.ResponseWriter, r *http.Request) error {
+<<<<<<< HEAD
 	movies, err := handler.service.GetMovies(r.Context(), 0, 0, "", "", 2000, 2024, 0.0)
+=======
+	limit := getIntQuery(r, "limit", 20)
+	offset := getIntQuery(r, "offset", 0)
+	sort := r.URL.Query().Get("sort")
+	genre := r.URL.Query().Get("genre")
+	minYear := getIntQuery(r, "min_year", 0)
+	maxYear := getIntQuery(r, "max_year", 0)
+	minRating := getFloatQuery(r, "min_rating", 0.0)
+	movies, err := handler.service.GetMovies(
+		r.Context(),
+		limit,
+		offset,
+		sort,
+		genre,
+		minYear,
+		maxYear,
+		minRating,
+	)
+>>>>>>> feature/movieService
 	if err != nil {
 		http.Error(w, "Failed to get movies", http.StatusInternalServerError)
 		return err
@@ -61,6 +91,7 @@ func (handler *MovieHandler) HandleGetMovieByID(w http.ResponseWriter, r *http.R
 }
 
 func (handler *MovieHandler) HandleCreateMovie(w http.ResponseWriter, r *http.Request) error {
+<<<<<<< HEAD
 	return nil
 }
 
@@ -69,6 +100,57 @@ func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Re
 }
 
 func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error {
+=======
+	var req dto.MovieRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+
+	movie := mapper.MovieFromRequest(req)
+
+	createdMovie, err := handler.service.CreateMovie(r.Context(), movie)
+	if err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusCreated, createdMovie)
+}
+
+func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Request) error {
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		return err
+	}
+
+	var req dto.MovieRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+
+	movie := mapper.MovieFromRequest(req)
+
+	updatedMovie, err := handler.service.UpdateMovie(r.Context(), id, movie)
+	if err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusOK, updatedMovie)
+}
+
+func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error {
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		return err
+	}
+
+	if err := handler.service.DeleteMovie(r.Context(), id); err != nil {
+		return err
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+>>>>>>> feature/movieService
 	return nil
 }
 
@@ -83,6 +165,37 @@ func parseIDParam(r *http.Request, param string) (uint, error) {
 	return uint(id), nil
 }
 
+<<<<<<< HEAD
+=======
+func getIntQuery(r *http.Request, key string, defaultValue int) int {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	parsedValue, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+
+	return parsedValue
+}
+
+func getFloatQuery(r *http.Request, key string, defaultValue float64) float64 {
+	value := r.URL.Query().Get(key)
+	if value == "" {
+		return defaultValue
+	}
+
+	parsedValue, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return defaultValue
+	}
+
+	return parsedValue
+}
+
+>>>>>>> feature/movieService
 func HandlerError(w http.ResponseWriter, err error) error {
 	switch {
 	case errors.Is(err, servicepkg.ErrInvalidInput):

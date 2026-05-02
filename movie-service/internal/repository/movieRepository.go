@@ -3,6 +3,10 @@ package repository
 import (
 	"context"
 	"errors"
+<<<<<<< HEAD
+=======
+	"log"
+>>>>>>> feature/movieService
 	"movie-service/internal/models"
 
 	"gorm.io/gorm"
@@ -89,17 +93,29 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 	err := repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		genres, err := repo.findGenresByIDs(tx, genreIDs)
 		if err != nil {
+<<<<<<< HEAD
+=======
+			log.Print("First Err: ", err)
+>>>>>>> feature/movieService
 			return err
 		}
 
 		movie.Genres = nil
 
 		if err := tx.Create(movie).Error; err != nil {
+<<<<<<< HEAD
+=======
+			log.Print("Second Err: ", err)
+>>>>>>> feature/movieService
 			return err
 		}
 
 		if len(genres) > 0 {
 			if err := tx.Model(movie).Association("Genres").Replace(genres); err != nil {
+<<<<<<< HEAD
+=======
+				log.Print("Third Err: ", err)
+>>>>>>> feature/movieService
 				return err
 			}
 		}
@@ -108,6 +124,10 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 	})
 
 	if err != nil {
+<<<<<<< HEAD
+=======
+		log.Print("Fourth Err: ", err)
+>>>>>>> feature/movieService
 		return nil, err
 	}
 
@@ -179,7 +199,11 @@ func (repo *MovieRepository) findGenresByIDs(tx *gorm.DB, genreIDs []uint) ([]mo
 
 	var genres []models.Genre
 
+<<<<<<< HEAD
 	if err := tx.Where("id IN ?", genreIDs).Error; err != nil {
+=======
+	if err := tx.Where("id IN ?", genreIDs).Find(&genres).Error; err != nil {
+>>>>>>> feature/movieService
 		return nil, err
 	}
 
