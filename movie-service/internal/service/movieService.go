@@ -91,7 +91,7 @@ func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movi
 		return nil, err
 	}
 
-	normalizeMovie(movie)
+	trimSpace(movie)
 
 	createdMovie, err := service.repo.Create(ctx, movie)
 	if errors.Is(err, repository.ErrGenreNotFound) {
@@ -110,7 +110,7 @@ func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *mo
 		return nil, err
 	}
 
-	normalizeMovie(movie)
+	trimSpace(movie)
 
 	updatedMovie, err := service.repo.Update(ctx, id, movie)
 	if errors.Is(err, repository.ErrRecordNotFound) {
@@ -176,7 +176,7 @@ func validateMovie(movie *models.Movie) error {
 	return nil
 }
 
-func normalizeMovie(movie *models.Movie) {
+func trimSpace(movie *models.Movie) {
 	movie.Title = strings.TrimSpace(movie.Title)
 	movie.Description = strings.TrimSpace(movie.Description)
 	movie.ImageURL = strings.TrimSpace(movie.ImageURL)

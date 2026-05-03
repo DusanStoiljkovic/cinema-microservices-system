@@ -2,10 +2,15 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"user-service/internal/dto"
 	"user-service/internal/models"
 
 	"gorm.io/gorm"
+)
+
+var (
+	ErrInputFilter = errors.New("invalid user filter")
 )
 
 type UserRepository struct {
@@ -20,6 +25,10 @@ func (r *UserRepository) GetUserByFilter(ctx context.Context, filter *dto.UserFi
 	user := &models.User{}
 
 	query := r.db.WithContext(ctx).Model(&models.User{})
+
+	if filter == nil {
+		return nil, ErrInputFilter
+	}
 
 	if filter.ID != nil {
 		query = query.Where("id = ?", *filter.ID)
@@ -42,8 +51,7 @@ func (r *UserRepository) GetUserByFilter(ctx context.Context, filter *dto.UserFi
 }
 
 func (r *UserRepository) Create(ctx context.Context, user *models.User) (*models.User, error) {
-	err := r.db.WithContext(ctx).Create(user).Error
-	if err != nil {
+	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
 		return nil, err
 	}
 

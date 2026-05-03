@@ -18,16 +18,19 @@ func main() {
 	}
 
 	// repos
+	genreRepo := repository.NewGenreRepository(db)
 	movieRepo := repository.NewMovieRepository(db)
 
 	// services
+	genreService := service.NewGenreService(genreRepo)
 	movieService := service.NewMovieService(movieRepo)
 
 	// handlers
+	genreHandler := handler.NewGenreHandler(genreService)
 	movieHandler := handler.NewMovieHandler(movieService)
 
 	// router
-	r := routes.RegisterRouter(movieHandler)
+	r := routes.RegisterRouter(movieHandler, genreHandler)
 
 	log.Print("Movie Server is running on :8082")
 	http.ListenAndServe(":8082", r)
