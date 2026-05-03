@@ -40,7 +40,7 @@ func (repo *GenreRepository) GetByFilter(ctx context.Context, filter *dto.GenreF
 		query = query.Where("LOWER(name) = LOWER(?)", *filter.Name)
 	}
 
-	if err := query.First(filter).Error; err != nil {
+	if err := query.First(genre).Error; err != nil {
 		return nil, err
 	}
 
