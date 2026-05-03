@@ -3,11 +3,9 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"movie-service/internal/dto"
 	"movie-service/internal/mapper"
 	"movie-service/internal/models"
-	servicepkg "movie-service/internal/service"
 	"movie-service/utils"
 	"net/http"
 	"strconv"
@@ -68,7 +66,7 @@ func (handler *MovieHandler) HandleGetMovies(w http.ResponseWriter, r *http.Requ
 func (handler *MovieHandler) HandleGetMovieByID(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return servicepkg.ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	movie, err := handler.service.GetMovieByID(r.Context(), id)
@@ -83,7 +81,7 @@ func (handler *MovieHandler) HandleCreateMovie(w http.ResponseWriter, r *http.Re
 	var req dto.MovieRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return servicepkg.ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	movie := mapper.MovieFromRequest(req)
@@ -99,13 +97,13 @@ func (handler *MovieHandler) HandleCreateMovie(w http.ResponseWriter, r *http.Re
 func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return servicepkg.ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	var req dto.MovieRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return servicepkg.ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	movie := mapper.MovieFromRequest(req)
@@ -121,7 +119,7 @@ func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Re
 func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return servicepkg.ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if err := handler.service.DeleteMovie(r.Context(), id); err != nil {
@@ -169,19 +167,4 @@ func getFloatQuery(r *http.Request, key string, defaultValue float64) float64 {
 	}
 
 	return parsedValue
-}
-
-func HandlerError(w http.ResponseWriter, err error) error {
-	switch {
-	case errors.Is(err, servicepkg.ErrInvalidInput):
-		utils.WriteError(w, http.StatusBadRequest, "invalid input")
-	case errors.Is(err, servicepkg.ErrNotFound):
-		utils.WriteError(w, http.StatusNotFound, "resource not found")
-	case errors.Is(err, servicepkg.ErrConflict):
-		utils.WriteError(w, http.StatusConflict, "resource conflict")
-	default:
-		utils.WriteError(w, http.StatusInternalServerError, "internal server error")
-	}
-
-	return err
 }

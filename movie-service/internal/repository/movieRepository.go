@@ -2,15 +2,10 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"movie-service/internal/models"
+	"movie-service/utils"
 
 	"gorm.io/gorm"
-)
-
-var (
-	ErrGenreNotFound  = errors.New("one or more genres do not exist")
-	ErrRecordNotFound = errors.New("movie does not exist")
 )
 
 type MovieRepository struct {
@@ -192,7 +187,7 @@ func (repo *MovieRepository) findGenresByIDs(tx *gorm.DB, genreIDs []uint) ([]mo
 	}
 
 	if len(genres) != len(genreIDs) {
-		return nil, ErrGenreNotFound
+		return nil, utils.ErrGenreNotFound
 	}
 
 	return genres, nil

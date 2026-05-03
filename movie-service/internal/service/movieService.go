@@ -4,16 +4,10 @@ import (
 	"context"
 	"errors"
 	"movie-service/internal/models"
-	"movie-service/internal/repository"
+	"movie-service/utils"
 	"strings"
 
 	"gorm.io/gorm"
-)
-
-var (
-	ErrInvalidInput = errors.New("invalid input")
-	ErrNotFound     = errors.New("resource not found")
-	ErrConflict     = errors.New("resource conflict")
 )
 
 type MovieRepository interface {
@@ -61,11 +55,11 @@ func (service *MovieService) GetMovies(
 	}
 
 	if minYear != 0 && maxYear != 0 && minYear > maxYear {
-		return nil, ErrInvalidInput
+		return nil, utils.ErrInvalidInput
 	}
 
 	if minRating < 0 || minRating > 10 {
-		return nil, ErrInvalidInput
+		return nil, utils.ErrInvalidInput
 	}
 
 	safeSort, err := mapSort(sort)
@@ -80,13 +74,13 @@ func (service *MovieService) GetMovies(
 
 func (service *MovieService) GetMovieByID(ctx context.Context, id uint) (*models.Movie, error) {
 	if id == 0 {
-		return nil, ErrInvalidInput
+		return nil, utils.ErrInvalidInput
 	}
 
 	movie, err := service.repo.GetMovieByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, ErrNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, utils.ErrRecordNotFound) {
+			return nil, utils.ErrNotFound
 		}
 
 		return nil, err
@@ -104,8 +98,8 @@ func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movi
 
 	createdMovie, err := service.repo.Create(ctx, movie)
 	if err != nil {
-		if errors.Is(err, repository.ErrGenreNotFound) {
-			return nil, ErrInvalidInput
+		if errors.Is(err, utils.ErrGenreNotFound) {
+			return nil, utils.ErrInvalidInput
 		}
 
 		return nil, err
@@ -116,7 +110,7 @@ func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movi
 
 func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error) {
 	if id == 0 {
-		return nil, ErrInvalidInput
+		return nil, utils.ErrInvalidInput
 	}
 
 	if err := validateMovie(movie); err != nil {
@@ -127,12 +121,12 @@ func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *mo
 
 	updatedMovie, err := service.repo.Update(ctx, id, movie)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, repository.ErrRecordNotFound) {
-			return nil, ErrNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, utils.ErrRecordNotFound) {
+			return nil, utils.ErrNotFound
 		}
 
-		if errors.Is(err, repository.ErrGenreNotFound) {
-			return nil, ErrInvalidInput
+		if errors.Is(err, utils.ErrGenreNotFound) {
+			return nil, utils.ErrInvalidInput
 		}
 
 		return nil, err
@@ -143,13 +137,13 @@ func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *mo
 
 func (service *MovieService) DeleteMovie(ctx context.Context, id uint) error {
 	if id == 0 {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	err := service.repo.Delete(ctx, id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, repository.ErrRecordNotFound) {
-			return ErrNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, utils.ErrRecordNotFound) {
+			return utils.ErrNotFound
 		}
 
 		return err
@@ -160,36 +154,36 @@ func (service *MovieService) DeleteMovie(ctx context.Context, id uint) error {
 
 func validateMovie(movie *models.Movie) error {
 	if movie == nil {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if strings.TrimSpace(movie.Title) == "" {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if strings.TrimSpace(movie.Description) == "" {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if strings.TrimSpace(movie.ImageURL) == "" {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if movie.Year < 1888 {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if movie.Duration <= 0 {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if movie.Rating < 0 || movie.Rating > 10 {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	for _, genre := range movie.Genres {
 		if genre.ID == 0 {
-			return ErrInvalidInput
+			return utils.ErrInvalidInput
 		}
 	}
 
@@ -241,6 +235,6 @@ func mapSort(sort string) (string, error) {
 	case "title_desc":
 		return "title DESC", nil
 	default:
-		return "", ErrInvalidInput
+		return "", utils.ErrInvalidInput
 	}
 }

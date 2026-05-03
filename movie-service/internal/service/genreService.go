@@ -5,6 +5,7 @@ import (
 	"errors"
 	"movie-service/internal/dto"
 	"movie-service/internal/models"
+	"movie-service/utils"
 	"strings"
 
 	"gorm.io/gorm"
@@ -87,7 +88,7 @@ func (service *GenreService) UpdateGenre(ctx context.Context, genre *models.Genr
 
 func (service *GenreService) DeleteGenre(ctx context.Context, id uint) error {
 	if id == 0 {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	err := service.repo.Delete(ctx, id)
@@ -100,11 +101,11 @@ func (service *GenreService) DeleteGenre(ctx context.Context, id uint) error {
 
 func validateGenre(genre *models.Genre) error {
 	if genre == nil {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	if strings.TrimSpace(genre.Name) == "" {
-		return ErrInvalidInput
+		return utils.ErrInvalidInput
 	}
 
 	return nil
