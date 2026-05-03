@@ -3,21 +3,13 @@ package repository
 import (
 	"context"
 	"errors"
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-	"log"
->>>>>>> feature/movieService
-=======
-	"log"
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	"movie-service/internal/models"
 
 	"gorm.io/gorm"
 )
 
 var (
-	ErrGenreNotFound  = errors.New("one or more genres do not exits")
+	ErrGenreNotFound  = errors.New("one or more genres do not exist")
 	ErrRecordNotFound = errors.New("movie does not exist")
 )
 
@@ -39,7 +31,10 @@ func (repo *MovieRepository) GetMovies(
 ) ([]*models.Movie, error) {
 	var movies []*models.Movie
 
-	query := repo.db.WithContext(ctx).Model(&models.Movie{}).Preload("Genres")
+	query := repo.db.
+		WithContext(ctx).
+		Model(&models.Movie{}).
+		Preload("Genres")
 
 	if genre != "" {
 		query = query.
@@ -72,8 +67,7 @@ func (repo *MovieRepository) GetMovies(
 		query = query.Limit(limit)
 	}
 
-	err := query.Find(&movies).Error
-	if err != nil {
+	if err := query.Find(&movies).Error; err != nil {
 		return nil, err
 	}
 
@@ -83,12 +77,17 @@ func (repo *MovieRepository) GetMovies(
 func (repo *MovieRepository) GetMovieByID(ctx context.Context, id uint) (*models.Movie, error) {
 	var movie models.Movie
 
-	err := repo.db.WithContext(ctx).Preload("Genres").First(&movie, id).Error
+	err := repo.db.
+		WithContext(ctx).
+		Preload("Genres").
+		First(&movie, id).
+		Error
+
 	if err != nil {
 		return nil, err
 	}
 
-	return &movie, err
+	return &movie, nil
 }
 
 func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*models.Movie, error) {
@@ -97,41 +96,17 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 	err := repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		genres, err := repo.findGenresByIDs(tx, genreIDs)
 		if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-			log.Print("First Err: ", err)
->>>>>>> feature/movieService
-=======
-			log.Print("First Err: ", err)
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 			return err
 		}
 
 		movie.Genres = nil
 
 		if err := tx.Create(movie).Error; err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-			log.Print("Second Err: ", err)
->>>>>>> feature/movieService
-=======
-			log.Print("Second Err: ", err)
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 			return err
 		}
 
 		if len(genres) > 0 {
 			if err := tx.Model(movie).Association("Genres").Replace(genres); err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-				log.Print("Third Err: ", err)
->>>>>>> feature/movieService
-=======
-				log.Print("Third Err: ", err)
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 				return err
 			}
 		}
@@ -140,14 +115,6 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 	})
 
 	if err != nil {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-		log.Print("Fourth Err: ", err)
->>>>>>> feature/movieService
-=======
-		log.Print("Fourth Err: ", err)
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 		return nil, err
 	}
 
@@ -157,7 +124,7 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *models.Movie) (*models.Movie, error) {
 	var movie models.Movie
 
-	genreIds := extractGenreIDs(updatedMovie.Genres)
+	genreIDs := extractGenreIDs(updatedMovie.Genres)
 	shouldUpdateGenres := updatedMovie.Genres != nil
 
 	err := repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -173,11 +140,11 @@ func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *
 		movie.Rating = updatedMovie.Rating
 
 		if err := tx.Save(&movie).Error; err != nil {
-			return nil
+			return err
 		}
 
 		if shouldUpdateGenres {
-			genres, err := repo.findGenresByIDs(tx, genreIds)
+			genres, err := repo.findGenresByIDs(tx, genreIDs)
 			if err != nil {
 				return err
 			}
@@ -189,6 +156,7 @@ func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *
 
 		return tx.Preload("Genres").First(&movie, id).Error
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -219,15 +187,7 @@ func (repo *MovieRepository) findGenresByIDs(tx *gorm.DB, genreIDs []uint) ([]mo
 
 	var genres []models.Genre
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	if err := tx.Where("id IN ?", genreIDs).Error; err != nil {
-=======
 	if err := tx.Where("id IN ?", genreIDs).Find(&genres).Error; err != nil {
->>>>>>> feature/movieService
-=======
-	if err := tx.Where("id IN ?", genreIDs).Find(&genres).Error; err != nil {
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 		return nil, err
 	}
 

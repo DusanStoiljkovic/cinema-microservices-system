@@ -17,12 +17,15 @@ var (
 )
 
 type MovieRepository interface {
-	GetMovies(ctx context.Context,
+	GetMovies(
+		ctx context.Context,
 		limit, offset int,
 		sort string,
 		genre string,
 		minYear, maxYear int,
-		minRating float64) ([]*models.Movie, error)
+		minRating float64,
+	) ([]*models.Movie, error)
+
 	GetMovieByID(ctx context.Context, id uint) (*models.Movie, error)
 	Create(ctx context.Context, movie *models.Movie) (*models.Movie, error)
 	Update(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error)
@@ -37,12 +40,14 @@ func NewMovieService(repo MovieRepository) *MovieService {
 	return &MovieService{repo: repo}
 }
 
-func (service *MovieService) GetMovies(ctx context.Context,
+func (service *MovieService) GetMovies(
+	ctx context.Context,
 	limit, offset int,
 	sort string,
 	genre string,
 	minYear, maxYear int,
-	minRating float64) ([]*models.Movie, error) {
+	minRating float64,
+) ([]*models.Movie, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -79,11 +84,15 @@ func (service *MovieService) GetMovieByID(ctx context.Context, id uint) (*models
 	}
 
 	movie, err := service.repo.GetMovieByID(ctx, id)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, ErrNotFound
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+
+		return nil, err
 	}
 
-	return movie, err
+	return movie, nil
 }
 
 func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movie) (*models.Movie, error) {
@@ -91,19 +100,15 @@ func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movi
 		return nil, err
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	normalizeMovie(movie)
-=======
 	trimSpace(movie)
->>>>>>> feature/movieService
-=======
-	trimSpace(movie)
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 
 	createdMovie, err := service.repo.Create(ctx, movie)
-	if errors.Is(err, repository.ErrGenreNotFound) {
-		return nil, ErrInvalidInput
+	if err != nil {
+		if errors.Is(err, repository.ErrGenreNotFound) {
+			return nil, ErrInvalidInput
+		}
+
+		return nil, err
 	}
 
 	return createdMovie, nil
@@ -118,23 +123,19 @@ func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *mo
 		return nil, err
 	}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	normalizeMovie(movie)
-=======
 	trimSpace(movie)
->>>>>>> feature/movieService
-=======
-	trimSpace(movie)
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 
 	updatedMovie, err := service.repo.Update(ctx, id, movie)
-	if errors.Is(err, repository.ErrRecordNotFound) {
-		return nil, ErrNotFound
-	}
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, repository.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
 
-	if errors.Is(err, repository.ErrGenreNotFound) {
-		return nil, ErrNotFound
+		if errors.Is(err, repository.ErrGenreNotFound) {
+			return nil, ErrInvalidInput
+		}
+
+		return nil, err
 	}
 
 	return updatedMovie, nil
@@ -146,12 +147,15 @@ func (service *MovieService) DeleteMovie(ctx context.Context, id uint) error {
 	}
 
 	err := service.repo.Delete(ctx, id)
-	if errors.Is(err, repository.ErrRecordNotFound) {
-		return ErrNotFound
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, repository.ErrRecordNotFound) {
+			return ErrNotFound
+		}
+
+		return err
 	}
 
-	return err
-
+	return nil
 }
 
 func validateMovie(movie *models.Movie) error {
@@ -192,15 +196,7 @@ func validateMovie(movie *models.Movie) error {
 	return nil
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-func normalizeMovie(movie *models.Movie) {
-=======
 func trimSpace(movie *models.Movie) {
->>>>>>> feature/movieService
-=======
-func trimSpace(movie *models.Movie) {
->>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	movie.Title = strings.TrimSpace(movie.Title)
 	movie.Description = strings.TrimSpace(movie.Description)
 	movie.ImageURL = strings.TrimSpace(movie.ImageURL)
@@ -242,7 +238,7 @@ func mapSort(sort string) (string, error) {
 		return "year ASC", nil
 	case "title_asc":
 		return "title ASC", nil
-	case "title_dedsc":
+	case "title_desc":
 		return "title DESC", nil
 	default:
 		return "", ErrInvalidInput
