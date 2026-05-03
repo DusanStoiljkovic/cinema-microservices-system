@@ -16,8 +16,11 @@ type MovieHandler interface {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func RegisterRouter(handler MovieHandler) http.Handler {
 =======
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 type GenreHandler interface {
 	HandleGetGenres(w http.ResponseWriter, r *http.Request) error
 	HandleGetGenreByFilter(w http.ResponseWriter, r *http.Request) error
@@ -27,11 +30,15 @@ type GenreHandler interface {
 }
 
 func RegisterRouter(movieHandler MovieHandler, genreHandler GenreHandler) http.Handler {
+<<<<<<< HEAD
 >>>>>>> feature/movieService
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	r := chi.NewRouter()
 
 	r.Group(func(r chi.Router) {
 		r.Route("/movies", func(r chi.Router) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 			r.Get("/", middleware.ErrorHandler(handler.HandleGetMovies))
 			r.Get("/{id}", middleware.ErrorHandler(handler.HandleGetMovieByID))
@@ -61,5 +68,26 @@ func RegisterRouter(movieHandler MovieHandler, genreHandler GenreHandler) http.H
 	})
 
 >>>>>>> feature/movieService
+=======
+			r.Get("/", middleware.ErrorHandler(movieHandler.HandleGetMovies))
+			r.Get("/{id}", middleware.ErrorHandler(movieHandler.HandleGetMovieByID))
+			r.Post("/", middleware.ErrorHandler(movieHandler.HandleCreateMovie))
+			r.Put("/{id}", middleware.ErrorHandler(movieHandler.HandleUpdateMovie))
+			r.Delete("/{id}", middleware.ErrorHandler(movieHandler.HandleDeleteMovie))
+
+			r.Group(func(r chi.Router) {
+				r.Route("/genres", func(r chi.Router) {
+					r.Get("/", middleware.ErrorHandler(genreHandler.HandleGetGenres))
+					r.Get("/{id}", middleware.ErrorHandler(genreHandler.HandleGetGenreByFilter))
+					r.Post("/", middleware.ErrorHandler(genreHandler.HandleCreateGenre))
+					r.Put("/{id}", middleware.ErrorHandler(genreHandler.HandleUpdateGenre))
+					r.Delete("/{id}", middleware.ErrorHandler(genreHandler.HandleDeleteGenre))
+				})
+
+			})
+		})
+	})
+
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	return r
 }

@@ -19,15 +19,22 @@ func main() {
 
 	// repos
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+	genreRepo := repository.NewGenreRepository(db)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	movieRepo := repository.NewMovieRepository(db)
 
 	// services
+	genreService := service.NewGenreService(genreRepo)
 	movieService := service.NewMovieService(movieRepo)
 
 	// handlers
+	genreHandler := handler.NewGenreHandler(genreService)
 	movieHandler := handler.NewMovieHandler(movieService)
 
 	// router
+<<<<<<< HEAD
 	r := routes.RegisterRouter(movieHandler)
 =======
 	genreRepo := repository.NewGenreRepository(db)
@@ -44,6 +51,9 @@ func main() {
 	// router
 	r := routes.RegisterRouter(movieHandler, genreHandler)
 >>>>>>> feature/movieService
+=======
+	r := routes.RegisterRouter(movieHandler, genreHandler)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 
 	log.Print("Movie Server is running on :8082")
 	http.ListenAndServe(":8082", r)

@@ -92,10 +92,14 @@ func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movi
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	normalizeMovie(movie)
 =======
 	trimSpace(movie)
 >>>>>>> feature/movieService
+=======
+	trimSpace(movie)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 
 	createdMovie, err := service.repo.Create(ctx, movie)
 	if errors.Is(err, repository.ErrGenreNotFound) {
@@ -115,10 +119,14 @@ func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *mo
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	normalizeMovie(movie)
 =======
 	trimSpace(movie)
 >>>>>>> feature/movieService
+=======
+	trimSpace(movie)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 
 	updatedMovie, err := service.repo.Update(ctx, id, movie)
 	if errors.Is(err, repository.ErrRecordNotFound) {
@@ -185,10 +193,14 @@ func validateMovie(movie *models.Movie) error {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func normalizeMovie(movie *models.Movie) {
 =======
 func trimSpace(movie *models.Movie) {
 >>>>>>> feature/movieService
+=======
+func trimSpace(movie *models.Movie) {
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	movie.Title = strings.TrimSpace(movie.Title)
 	movie.Description = strings.TrimSpace(movie.Description)
 	movie.ImageURL = strings.TrimSpace(movie.ImageURL)

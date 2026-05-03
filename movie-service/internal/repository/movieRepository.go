@@ -4,9 +4,13 @@ import (
 	"context"
 	"errors"
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	"log"
 >>>>>>> feature/movieService
+=======
+	"log"
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	"movie-service/internal/models"
 
 	"gorm.io/gorm"
@@ -94,9 +98,13 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 		genres, err := repo.findGenresByIDs(tx, genreIDs)
 		if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 			log.Print("First Err: ", err)
 >>>>>>> feature/movieService
+=======
+			log.Print("First Err: ", err)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 			return err
 		}
 
@@ -104,18 +112,26 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 
 		if err := tx.Create(movie).Error; err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 			log.Print("Second Err: ", err)
 >>>>>>> feature/movieService
+=======
+			log.Print("Second Err: ", err)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 			return err
 		}
 
 		if len(genres) > 0 {
 			if err := tx.Model(movie).Association("Genres").Replace(genres); err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 				log.Print("Third Err: ", err)
 >>>>>>> feature/movieService
+=======
+				log.Print("Third Err: ", err)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 				return err
 			}
 		}
@@ -125,9 +141,13 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 		log.Print("Fourth Err: ", err)
 >>>>>>> feature/movieService
+=======
+		log.Print("Fourth Err: ", err)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 		return nil, err
 	}
 
@@ -200,10 +220,14 @@ func (repo *MovieRepository) findGenresByIDs(tx *gorm.DB, genreIDs []uint) ([]mo
 	var genres []models.Genre
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err := tx.Where("id IN ?", genreIDs).Error; err != nil {
 =======
 	if err := tx.Where("id IN ?", genreIDs).Find(&genres).Error; err != nil {
 >>>>>>> feature/movieService
+=======
+	if err := tx.Where("id IN ?", genreIDs).Find(&genres).Error; err != nil {
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 		return nil, err
 	}
 

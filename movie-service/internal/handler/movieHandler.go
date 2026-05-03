@@ -5,10 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 	"movie-service/internal/dto"
 	"movie-service/internal/mapper"
 >>>>>>> feature/movieService
+=======
+	"movie-service/internal/dto"
+	"movie-service/internal/mapper"
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	"movie-service/internal/models"
 	servicepkg "movie-service/internal/service"
 	"movie-service/utils"
@@ -20,11 +25,16 @@ import (
 
 type MovieService interface {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	GetMovies(ctx context.Context,
 =======
 	GetMovies(
 		ctx context.Context,
 >>>>>>> feature/movieService
+=======
+	GetMovies(
+		ctx context.Context,
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 		limit, offset int,
 		sort string,
 		genre string,
@@ -46,8 +56,11 @@ func NewMovieHandler(service MovieService) *MovieHandler {
 
 func (handler *MovieHandler) HandleGetMovies(w http.ResponseWriter, r *http.Request) error {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	movies, err := handler.service.GetMovies(r.Context(), 0, 0, "", "", 2000, 2024, 0.0)
 =======
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	limit := getIntQuery(r, "limit", 20)
 	offset := getIntQuery(r, "offset", 0)
 	sort := r.URL.Query().Get("sort")
@@ -65,7 +78,10 @@ func (handler *MovieHandler) HandleGetMovies(w http.ResponseWriter, r *http.Requ
 		maxYear,
 		minRating,
 	)
+<<<<<<< HEAD
 >>>>>>> feature/movieService
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	if err != nil {
 		http.Error(w, "Failed to get movies", http.StatusInternalServerError)
 		return err
@@ -92,14 +108,50 @@ func (handler *MovieHandler) HandleGetMovieByID(w http.ResponseWriter, r *http.R
 
 func (handler *MovieHandler) HandleCreateMovie(w http.ResponseWriter, r *http.Request) error {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return nil
+=======
+	var req dto.MovieRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+
+	movie := mapper.MovieFromRequest(req)
+
+	createdMovie, err := handler.service.CreateMovie(r.Context(), movie)
+	if err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusCreated, createdMovie)
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 }
 
 func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Request) error {
-	return nil
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		return err
+	}
+
+	var req dto.MovieRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return err
+	}
+
+	movie := mapper.MovieFromRequest(req)
+
+	updatedMovie, err := handler.service.UpdateMovie(r.Context(), id, movie)
+	if err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusOK, updatedMovie)
 }
 
 func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error {
+<<<<<<< HEAD
 =======
 	var req dto.MovieRequest
 
@@ -140,6 +192,8 @@ func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Re
 }
 
 func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error {
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	id, err := parseIDParam(r, "id")
 	if err != nil {
 		return err
@@ -150,7 +204,10 @@ func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Re
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+<<<<<<< HEAD
 >>>>>>> feature/movieService
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 	return nil
 }
 
@@ -166,7 +223,10 @@ func parseIDParam(r *http.Request, param string) (uint, error) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 func getIntQuery(r *http.Request, key string, defaultValue int) int {
 	value := r.URL.Query().Get(key)
 	if value == "" {
@@ -195,7 +255,10 @@ func getFloatQuery(r *http.Request, key string, defaultValue float64) float64 {
 	return parsedValue
 }
 
+<<<<<<< HEAD
 >>>>>>> feature/movieService
+=======
+>>>>>>> da5f31b (feat(movie-service): implement genre management with repository, service, and handler layers; enhance movie handler and routes)
 func HandlerError(w http.ResponseWriter, err error) error {
 	switch {
 	case errors.Is(err, servicepkg.ErrInvalidInput):
