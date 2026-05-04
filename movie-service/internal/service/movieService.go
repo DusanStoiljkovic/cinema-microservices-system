@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"movie-service/internal/dto"
 	"movie-service/internal/models"
 	"movie-service/utils"
 	"strings"
@@ -23,16 +24,18 @@ type MovieRepository interface {
 	GetMovieByID(ctx context.Context, id uint) (*models.Movie, error)
 	GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error)
 	Create(ctx context.Context, movie *models.Movie) (*models.Movie, error)
+	CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error)
 	Update(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error)
 	Delete(ctx context.Context, id uint) error
 }
 
 type MovieService struct {
-	repo MovieRepository
+	repo      MovieRepository
+	genreRepo GenreRepository
 }
 
-func NewMovieService(repo MovieRepository) *MovieService {
-	return &MovieService{repo: repo}
+func NewMovieService(repo MovieRepository, genreRepo GenreRepository) *MovieService {
+	return &MovieService{repo: repo, genreRepo: genreRepo}
 }
 
 func (service *MovieService) GetMovies(
@@ -120,6 +123,33 @@ func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movi
 	}
 
 	return createdMovie, nil
+}
+
+func (service *MovieService) CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error) {
+	if movieID == 0 || genreID == 0 {
+		return nil, utils.ErrInvalidInput
+	}
+
+	existMovie, err := service.repo.GetMovieByID(ctx, movieID)
+	if err != nil {
+		return nil, err
+	}
+
+	existGenre, err := service.genreRepo.GetByFilter(ctx, &dto.GenreFilter{ID: &genreID})
+	if err != nil {
+		return nil, err
+	}
+
+	if existMovie == nil || existGenre == nil {
+		return nil, utils.ErrRecordNotFound
+	}
+
+	movie, err := service.repo.CreateRelation(ctx, movieID, genreID)
+	if err != nil {
+		return nil, err
+	}
+
+	return movie, nil
 }
 
 func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error) {

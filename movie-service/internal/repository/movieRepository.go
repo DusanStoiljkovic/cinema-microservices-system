@@ -127,6 +127,33 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 	return movie, nil
 }
 
+func (repo *MovieRepository) CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error) {
+	var movie models.Movie
+	var genre models.Genre
+
+	err := repo.db.WithContext(ctx).First(&movie, movieID).Error
+	if err != nil {
+		return nil, utils.ErrNotFound
+	}
+
+	err = repo.db.WithContext(ctx).First(&genre, genreID).Error
+	if err != nil {
+		return nil, utils.ErrNotFound
+	}
+
+	err = repo.db.WithContext(ctx).Model(&movie).Association("Genres").Append(&genre)
+	if err != nil {
+		return nil, err
+	}
+
+	err = repo.db.WithContext(ctx).Preload("Genres").First(&movie, movieID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &movie, err
+}
+
 func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *models.Movie) (*models.Movie, error) {
 	var movie models.Movie
 

@@ -12,6 +12,7 @@ type MovieHandler interface {
 	HandleGetMovieByID(w http.ResponseWriter, r *http.Request) error
 	HandleGetRelationsByMovieID(w http.ResponseWriter, r *http.Request) error
 	HandleCreateMovie(w http.ResponseWriter, r *http.Request) error
+	HandleCreateRelation(w http.ResponseWriter, r *http.Request) error
 	HandleUpdateMovie(w http.ResponseWriter, r *http.Request) error
 	HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error
 }
@@ -32,6 +33,7 @@ func RegisterRouter(movieHandler MovieHandler, genreHandler GenreHandler) http.H
 		r.Get("/{id}/genres", middleware.ErrorHandler(movieHandler.HandleGetRelationsByMovieID))
 		r.Get("/{id}", middleware.ErrorHandler(movieHandler.HandleGetMovieByID))
 		r.Post("/", middleware.ErrorHandler(movieHandler.HandleCreateMovie))
+		r.Post("/{movieId}/genres/{genreId}", middleware.ErrorHandler(movieHandler.HandleCreateRelation))
 		r.Put("/{id}", middleware.ErrorHandler(movieHandler.HandleUpdateMovie))
 		r.Delete("/{id}", middleware.ErrorHandler(movieHandler.HandleDeleteMovie))
 

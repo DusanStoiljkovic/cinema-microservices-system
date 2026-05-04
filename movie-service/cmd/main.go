@@ -23,7 +23,7 @@ func main() {
 
 	// services
 	genreService := service.NewGenreService(genreRepo)
-	movieService := service.NewMovieService(movieRepo)
+	movieService := service.NewMovieService(movieRepo, genreRepo)
 
 	// handlers
 	genreHandler := handler.NewGenreHandler(genreService)
