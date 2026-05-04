@@ -213,6 +213,28 @@ func (repo *MovieRepository) Delete(ctx context.Context, id uint) error {
 	})
 }
 
+func (repo *MovieRepository) DeleteRelation(ctx context.Context, movieID, genreID uint) error {
+	var movie models.Movie
+	var genre models.Genre
+
+	err := repo.db.WithContext(ctx).First(&movie, movieID).Error
+	if err != nil {
+		return utils.ErrNotFound
+	}
+
+	err = repo.db.WithContext(ctx).First(&genre, genreID).Error
+	if err != nil {
+		return utils.ErrNotFound
+	}
+
+	err = repo.db.WithContext(ctx).Model(&movie).Association("Genres").Delete(genre)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (repo *MovieRepository) findGenresByIDs(tx *gorm.DB, genreIDs []uint) ([]models.Genre, error) {
 	if len(genreIDs) == 0 {
 		return []models.Genre{}, nil

@@ -29,6 +29,7 @@ type MovieService interface {
 	CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error)
 	UpdateMovie(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error)
 	DeleteMovie(ctx context.Context, id uint) error
+	DeleteRelation(ctx context.Context, movieID, genreID uint) error
 }
 
 type MovieHandler struct {
@@ -163,6 +164,25 @@ func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Re
 
 	w.WriteHeader(http.StatusNoContent)
 	return nil
+}
+
+func (handler *MovieHandler) HandleDeleteRelation(w http.ResponseWriter, r *http.Request) error {
+	movieId, err := parseIDParam(r, "movieId")
+	if err != nil {
+		return utils.ErrInvalidInput
+	}
+
+	genreId, err := parseIDParam(r, "genreId")
+	if err != nil {
+		return utils.ErrInvalidInput
+	}
+
+	err = handler.service.DeleteRelation(r.Context(), movieId, genreId)
+	if err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusNoContent, "")
 }
 
 func parseIDParam(r *http.Request, param string) (uint, error) {

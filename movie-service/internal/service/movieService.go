@@ -27,6 +27,7 @@ type MovieRepository interface {
 	CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error)
 	Update(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error)
 	Delete(ctx context.Context, id uint) error
+	DeleteRelation(ctx context.Context, movieID, genreID uint) error
 }
 
 type MovieService struct {
@@ -190,6 +191,33 @@ func (service *MovieService) DeleteMovie(ctx context.Context, id uint) error {
 			return utils.ErrNotFound
 		}
 
+		return err
+	}
+
+	return nil
+}
+
+func (service *MovieService) DeleteRelation(ctx context.Context, movieID, genreID uint) error {
+	if movieID == 0 || genreID == 0 {
+		return utils.ErrInvalidInput
+	}
+
+	existMovie, err := service.repo.GetMovieByID(ctx, movieID)
+	if err != nil {
+		return err
+	}
+
+	existGenre, err := service.genreRepo.GetByFilter(ctx, &dto.GenreFilter{ID: &genreID})
+	if err != nil {
+		return err
+	}
+
+	if existMovie == nil || existGenre == nil {
+		return utils.ErrRecordNotFound
+	}
+
+	err = service.repo.DeleteRelation(ctx, movieID, genreID)
+	if err != nil {
 		return err
 	}
 

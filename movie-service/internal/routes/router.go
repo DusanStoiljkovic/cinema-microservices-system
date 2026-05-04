@@ -15,6 +15,7 @@ type MovieHandler interface {
 	HandleCreateRelation(w http.ResponseWriter, r *http.Request) error
 	HandleUpdateMovie(w http.ResponseWriter, r *http.Request) error
 	HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error
+	HandleDeleteRelation(w http.ResponseWriter, r *http.Request) error
 }
 
 type GenreHandler interface {
@@ -36,6 +37,7 @@ func RegisterRouter(movieHandler MovieHandler, genreHandler GenreHandler) http.H
 		r.Post("/{movieId}/genres/{genreId}", middleware.ErrorHandler(movieHandler.HandleCreateRelation))
 		r.Put("/{id}", middleware.ErrorHandler(movieHandler.HandleUpdateMovie))
 		r.Delete("/{id}", middleware.ErrorHandler(movieHandler.HandleDeleteMovie))
+		r.Delete("/{movieId}/genres/{genreId}", middleware.ErrorHandler(movieHandler.HandleDeleteRelation))
 
 		r.Group(func(r chi.Router) {
 			r.Route("/genres", func(r chi.Router) {
