@@ -85,6 +85,17 @@ func (repo *MovieRepository) GetMovieByID(ctx context.Context, id uint) (*models
 	return &movie, nil
 }
 
+func (repo *MovieRepository) GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error) {
+	var movie models.Movie
+
+	err := repo.db.WithContext(ctx).Preload("Genres").First(&movie, id).Error
+	if err != nil {
+		return nil, utils.ErrNotFound
+	}
+
+	return movie.Genres, nil
+}
+
 func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*models.Movie, error) {
 	genreIDs := extractGenreIDs(movie.Genres)
 

@@ -24,6 +24,7 @@ type MovieService interface {
 	) ([]*models.Movie, error)
 
 	GetMovieByID(ctx context.Context, id uint) (*models.Movie, error)
+	GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error)
 	CreateMovie(ctx context.Context, movie *models.Movie) (*models.Movie, error)
 	UpdateMovie(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error)
 	DeleteMovie(ctx context.Context, id uint) error
@@ -75,6 +76,20 @@ func (handler *MovieHandler) HandleGetMovieByID(w http.ResponseWriter, r *http.R
 	}
 
 	return utils.WriteJSON(w, http.StatusOK, movie)
+}
+
+func (handler *MovieHandler) HandleGetRelationsByMovieID(w http.ResponseWriter, r *http.Request) error {
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		return utils.ErrInvalidInput
+	}
+
+	relations, err := handler.service.GetRelationsByMovieID(r.Context(), id)
+	if err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusOK, relations)
 }
 
 func (handler *MovieHandler) HandleCreateMovie(w http.ResponseWriter, r *http.Request) error {

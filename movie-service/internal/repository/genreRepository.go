@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"log"
 	"movie-service/internal/dto"
 	"movie-service/internal/models"
 
@@ -23,6 +24,8 @@ func (repo *GenreRepository) GetAll(ctx context.Context) ([]*models.Genre, error
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println("Genres from repo: ", genres)
 
 	return genres, nil
 }

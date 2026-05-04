@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"log"
 	"movie-service/internal/dto"
 	"movie-service/internal/models"
 	"movie-service/utils"
@@ -36,6 +37,8 @@ func (service *GenreService) GetGenres(ctx context.Context) ([]*models.Genre, er
 	if err != nil {
 		return nil, err
 	}
+
+	log.Print("Genres from service: ", genres)
 
 	return genres, nil
 }

@@ -21,6 +21,7 @@ type MovieRepository interface {
 	) ([]*models.Movie, error)
 
 	GetMovieByID(ctx context.Context, id uint) (*models.Movie, error)
+	GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error)
 	Create(ctx context.Context, movie *models.Movie) (*models.Movie, error)
 	Update(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error)
 	Delete(ctx context.Context, id uint) error
@@ -87,6 +88,19 @@ func (service *MovieService) GetMovieByID(ctx context.Context, id uint) (*models
 	}
 
 	return movie, nil
+}
+
+func (service *MovieService) GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error) {
+	if id == 0 {
+		return nil, utils.ErrGenreNotFound
+	}
+
+	relations, err := service.repo.GetRelationsByMovieID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return relations, nil
 }
 
 func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movie) (*models.Movie, error) {

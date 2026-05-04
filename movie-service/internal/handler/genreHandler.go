@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"movie-service/internal/dto"
 	"movie-service/internal/models"
 	"movie-service/utils"
@@ -30,6 +31,8 @@ func (handler *GenreHandler) HandleGetGenres(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		return err
 	}
+
+	log.Print("Genres from handler: ", genres)
 
 	utils.WriteJSON(w, http.StatusOK, genres)
 	return nil
