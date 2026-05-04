@@ -38,16 +38,14 @@ func RegisterRouter(movieHandler MovieHandler, genreHandler GenreHandler) http.H
 		r.Put("/{id}", middleware.ErrorHandler(movieHandler.HandleUpdateMovie))
 		r.Delete("/{id}", middleware.ErrorHandler(movieHandler.HandleDeleteMovie))
 		r.Delete("/{movieId}/genres/{genreId}", middleware.ErrorHandler(movieHandler.HandleDeleteRelation))
+	})
 
-		r.Group(func(r chi.Router) {
-			r.Route("/genres", func(r chi.Router) {
-				r.Get("/", middleware.ErrorHandler(genreHandler.HandleGetGenres))
-				r.Get("/{id}", middleware.ErrorHandler(genreHandler.HandleGetGenreByFilter))
-				r.Post("/", middleware.ErrorHandler(genreHandler.HandleCreateGenre))
-				r.Put("/{id}", middleware.ErrorHandler(genreHandler.HandleUpdateGenre))
-				r.Delete("/{id}", middleware.ErrorHandler(genreHandler.HandleDeleteGenre))
-			})
-		})
+	r.Route("/genres", func(r chi.Router) {
+		r.Get("/", middleware.ErrorHandler(genreHandler.HandleGetGenres))
+		r.Get("/{id}", middleware.ErrorHandler(genreHandler.HandleGetGenreByFilter))
+		r.Post("/", middleware.ErrorHandler(genreHandler.HandleCreateGenre))
+		r.Put("/{id}", middleware.ErrorHandler(genreHandler.HandleUpdateGenre))
+		r.Delete("/{id}", middleware.ErrorHandler(genreHandler.HandleDeleteGenre))
 	})
 
 	return r

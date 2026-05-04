@@ -14,6 +14,7 @@ func main() {
 	// ROUTES
 	p.AddRoute("/api/users", os.Getenv("USER_SERVICE_URL"))
 	p.AddRoute("/api/movies", os.Getenv("MOVIE_SERVICE_URL"))
+	p.AddRoute("/api/genres", os.Getenv("MOVIE_SERVICE_URL"))
 	p.AddRoute("/api/bookings", os.Getenv("BOOKINGS_SERVICE_URL"))
 
 	log.Println("API Gateway is running on :8080")
