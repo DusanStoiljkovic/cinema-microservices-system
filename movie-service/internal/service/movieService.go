@@ -24,7 +24,7 @@ type MovieRepository interface {
 	GetMovieByID(ctx context.Context, id uint) (*models.Movie, error)
 	GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error)
 	Create(ctx context.Context, movie *models.Movie) (*models.Movie, error)
-	CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error)
+	CreateRelation(ctx context.Context, movie *models.Movie, genreID *models.Genre) (*models.Movie, error)
 	Update(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error)
 	Delete(ctx context.Context, id uint) error
 	DeleteRelation(ctx context.Context, movieID, genreID uint) error
@@ -145,7 +145,7 @@ func (service *MovieService) CreateRelation(ctx context.Context, movieID, genreI
 		return nil, utils.ErrRecordNotFound
 	}
 
-	movie, err := service.repo.CreateRelation(ctx, movieID, genreID)
+	movie, err := service.repo.CreateRelation(ctx, existMovie, existGenre)
 	if err != nil {
 		return nil, err
 	}

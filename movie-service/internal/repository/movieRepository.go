@@ -127,31 +127,20 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 	return movie, nil
 }
 
-func (repo *MovieRepository) CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error) {
-	var movie models.Movie
-	var genre models.Genre
+func (repo *MovieRepository) CreateRelation(ctx context.Context, movie *models.Movie, genre *models.Genre) (*models.Movie, error) {
+	var createdRelation models.Movie
 
-	err := repo.db.WithContext(ctx).First(&movie, movieID).Error
-	if err != nil {
-		return nil, utils.ErrNotFound
-	}
-
-	err = repo.db.WithContext(ctx).First(&genre, genreID).Error
-	if err != nil {
-		return nil, utils.ErrNotFound
-	}
-
-	err = repo.db.WithContext(ctx).Model(&movie).Association("Genres").Append(&genre)
+	err := repo.db.WithContext(ctx).Model(movie).Association("Genres").Append(genre)
 	if err != nil {
 		return nil, err
 	}
 
-	err = repo.db.WithContext(ctx).Preload("Genres").First(&movie, movieID).Error
+	err = repo.db.WithContext(ctx).Preload("Genres").First(&createdRelation, movie.ID).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return &movie, err
+	return &createdRelation, err
 }
 
 func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *models.Movie) (*models.Movie, error) {
@@ -227,7 +216,7 @@ func (repo *MovieRepository) DeleteRelation(ctx context.Context, movieID, genreI
 		return utils.ErrNotFound
 	}
 
-	err = repo.db.WithContext(ctx).Model(&movie).Association("Genres").Delete(genre)
+	err = repo.db.WithContext(ctx).Model(&movie).Association("Genres").Delete(&genre)
 	if err != nil {
 		return err
 	}

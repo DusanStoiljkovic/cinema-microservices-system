@@ -182,7 +182,8 @@ func (handler *MovieHandler) HandleDeleteRelation(w http.ResponseWriter, r *http
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusNoContent, "")
+	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
 
 func parseIDParam(r *http.Request, param string) (uint, error) {
