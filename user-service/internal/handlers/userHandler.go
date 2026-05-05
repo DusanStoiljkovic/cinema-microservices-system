@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"user-service/internal/dto"
@@ -32,17 +33,14 @@ func NewUserHandler(service UserService) *UserHandler {
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
-	//const requestIDKey ContextKey = "requestID"
-
 	userID, ok := ctx.Value(middleware.UserIDKey).(uint)
-	if !ok {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return nil
+	if ok {
+		return secure.NewAuthFailed("Unauthorized", errors.New("Unauthorized"))
 	}
 
 	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: userID})
 	if err != nil {
-		return secure.NewAuthFailed(err.Error(), err, nil)
+		return secure.NewAuthFailed(err.Error(), err)
 	}
 
 	json.NewEncoder(w).Encode(&dto.UserResponse{
@@ -58,12 +56,12 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) error 
 	idParam := chi.URLParam(r, "id")
 	userID, err := strconv.Atoi(idParam)
 	if err != nil {
-		return secure.NewAuthFailed("Invalid user ID", err, nil)
+		return secure.NewAuthFailed("Invalid user ID", err)
 	}
 
 	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: uint(userID)})
 	if err != nil {
-		return secure.NewAuthFailed("User does not exist", err, nil)
+		return secure.NewAuthFailed("User does not exist", err)
 	}
 
 	json.NewEncoder(w).Encode(&dto.UserResponse{
@@ -81,12 +79,12 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) error
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		return secure.NewAuthFailed("Invalid request body", err, nil)
+		return secure.NewAuthFailed("Invalid request body", err)
 	}
 
 	err = validate.Struct(request)
 	if err != nil {
-		return secure.NewAuthFailed("Validation failed", err, nil)
+		return secure.NewAuthFailed("Validation failed", err)
 	}
 
 	user, err := h.service.Register(r.Context(), &models.User{
@@ -111,11 +109,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
 
 	err := json.NewDecoder(r.Body).Decode(request)
 	if err != nil {
-		return secure.NewAuthFailed(
-			"Invalid request body",
-			err,
-			nil,
-		)
+		return secure.NewAuthFailed("Invalid request body", err)
 	}
 
 	user, err := h.service.Login(r.Context(), &models.User{
