@@ -18,6 +18,7 @@ type HallHander interface {
 type ProjectionHandler interface {
 	HandleGetAllProjections(w http.ResponseWriter, r *http.Request) error
 	HandleGetProjectionByID(w http.ResponseWriter, r *http.Request) error
+	HandleGetProjectionsByMovieID(w http.ResponseWriter, r *http.Request) error
 	HandleCreateProjection(w http.ResponseWriter, r *http.Request) error
 	HandleUpdateProjection(w http.ResponseWriter, r *http.Request) error
 	HandleDeleteProjection(w http.ResponseWriter, r *http.Request) error
@@ -37,6 +38,7 @@ func RegisterRouter(hallHandler HallHander, projectionHandler ProjectionHandler)
 	r.Route("/projections", func(r chi.Router) {
 		r.Get("/", middleware.ErrorHandler(projectionHandler.HandleGetAllProjections))
 		r.Get("/{id}", middleware.ErrorHandler(projectionHandler.HandleGetProjectionByID))
+		r.Get("/movie/{id}", middleware.ErrorHandler(projectionHandler.HandleGetProjectionsByMovieID))
 		r.Post("/", middleware.ErrorHandler(projectionHandler.HandleCreateProjection))
 		r.Put("/{id}", middleware.ErrorHandler(projectionHandler.HandleUpdateProjection))
 		r.Delete("/{id}", middleware.ErrorHandler(projectionHandler.HandleDeleteProjection))

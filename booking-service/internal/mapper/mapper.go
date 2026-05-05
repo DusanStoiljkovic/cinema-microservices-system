@@ -12,3 +12,13 @@ func HallFromRequest(req *dto.HallRequest) *models.Hall {
 		Capacity: req.Capacity,
 	}
 }
+
+func ProjectionFromRequest(req *dto.ProjectionRequest) *models.Projection {
+	return &models.Projection{
+		MovieID:   req.MovieID,
+		HallID:    req.HallID,
+		StartTime: req.StartTime,
+		EndTime:   req.EndTime,
+		Price:     req.Price,
+	}
+}
