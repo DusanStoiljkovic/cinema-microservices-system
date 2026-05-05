@@ -3,11 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"net/http"
+
 	"movie-service/internal/dto"
 	"movie-service/internal/models"
-	"movie-service/utils"
-	"net/http"
+	"movie-service/internal/utils"
 )
 
 type GenreService interface {
@@ -32,17 +32,14 @@ func (handler *GenreHandler) HandleGetGenres(w http.ResponseWriter, r *http.Requ
 		return err
 	}
 
-	log.Print("Genres from handler: ", genres)
-
-	utils.WriteJSON(w, http.StatusOK, genres)
-	return nil
+	return utils.WriteJSON(w, http.StatusOK, genres)
 }
 
 func (handler *GenreHandler) HandleGetGenreByFilter(w http.ResponseWriter, r *http.Request) error {
-	var req *dto.GenreFilter
+	req := &dto.GenreFilter{}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return err
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
 	genre, err := handler.service.GetGenreByFilter(r.Context(), req)
@@ -50,55 +47,62 @@ func (handler *GenreHandler) HandleGetGenreByFilter(w http.ResponseWriter, r *ht
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, genre)
-	return nil
+	return utils.WriteJSON(w, http.StatusOK, genre)
 }
 
 func (handler *GenreHandler) HandleCreateGenre(w http.ResponseWriter, r *http.Request) error {
-	var req *dto.GenreRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return err
+	req := &dto.GenreRequest{}
+
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
-	createdGenre, err := handler.service.CreateGenre(r.Context(), &models.Genre{Name: req.Name})
+	genre := &models.Genre{
+		Name: req.Name,
+	}
+
+	createdGenre, err := handler.service.CreateGenre(r.Context(), genre)
 	if err != nil {
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, createdGenre)
-	return nil
+	return utils.WriteJSON(w, http.StatusCreated, createdGenre)
 }
 
 func (handler *GenreHandler) HandleUpdateGenre(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return err
+		return utils.NewInvalidInput("Invalid genre id", err)
 	}
 
-	var req dto.GenreRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return err
+	req := &dto.GenreRequest{}
+
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
-	createdGenre, err := handler.service.UpdateGenre(r.Context(), &models.Genre{Name: req.Name}, id)
+	genre := &models.Genre{
+		Name: req.Name,
+	}
+
+	updatedGenre, err := handler.service.UpdateGenre(r.Context(), genre, id)
 	if err != nil {
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, createdGenre)
-	return nil
+	return utils.WriteJSON(w, http.StatusOK, updatedGenre)
 }
 
 func (handler *GenreHandler) HandleDeleteGenre(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return err
+		return utils.NewInvalidInput("Invalid genre id", err)
 	}
 
 	if err := handler.service.DeleteGenre(r.Context(), id); err != nil {
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusNoContent, "")
+	w.WriteHeader(http.StatusNoContent)
 	return nil
 }

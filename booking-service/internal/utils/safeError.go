@@ -1,4 +1,4 @@
-package secure
+package utils
 
 import (
 	"fmt"

@@ -1,13 +1,14 @@
 package routes
 
 import (
-	"booking-service/internal/middleware"
 	"net/http"
+
+	"booking-service/internal/middleware"
 
 	"github.com/go-chi/chi/v5"
 )
 
-type HallHander interface {
+type HallHandler interface {
 	HandleGetAllHalls(w http.ResponseWriter, r *http.Request) error
 	HandleGetHallByID(w http.ResponseWriter, r *http.Request) error
 	HandleCreateHall(w http.ResponseWriter, r *http.Request) error
@@ -24,7 +25,7 @@ type ProjectionHandler interface {
 	HandleDeleteProjection(w http.ResponseWriter, r *http.Request) error
 }
 
-func RegisterRouter(hallHandler HallHander, projectionHandler ProjectionHandler) http.Handler {
+func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Route("/halls", func(r chi.Router) {
@@ -37,8 +38,8 @@ func RegisterRouter(hallHandler HallHander, projectionHandler ProjectionHandler)
 
 	r.Route("/projections", func(r chi.Router) {
 		r.Get("/", middleware.ErrorHandler(projectionHandler.HandleGetAllProjections))
+		r.Get("/movie/{movie_id}", middleware.ErrorHandler(projectionHandler.HandleGetProjectionsByMovieID))
 		r.Get("/{id}", middleware.ErrorHandler(projectionHandler.HandleGetProjectionByID))
-		r.Get("/movie/{id}", middleware.ErrorHandler(projectionHandler.HandleGetProjectionsByMovieID))
 		r.Post("/", middleware.ErrorHandler(projectionHandler.HandleCreateProjection))
 		r.Put("/{id}", middleware.ErrorHandler(projectionHandler.HandleUpdateProjection))
 		r.Delete("/{id}", middleware.ErrorHandler(projectionHandler.HandleDeleteProjection))

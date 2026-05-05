@@ -4,6 +4,7 @@ import (
 	"booking-service/internal/models"
 	"booking-service/internal/utils"
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -20,7 +21,14 @@ func (repo *HallRepository) GetAll(ctx context.Context) ([]*models.Hall, error) 
 	var halls []*models.Hall
 
 	if err := repo.db.WithContext(ctx).Find(&halls).Error; err != nil {
-		return nil, utils.ErrNotFound
+		return nil, utils.NewConflict("Failed to load halls", err)
+	}
+
+	if len(halls) == 0 {
+		return nil, utils.NewNotFound(
+			"Halls not found",
+			errors.New("HallRepository.GetAll -> empty list"),
+		)
 	}
 
 	return halls, nil
@@ -30,39 +38,60 @@ func (repo *HallRepository) GetByID(ctx context.Context, id uint) (*models.Hall,
 	hall := &models.Hall{}
 
 	if err := repo.db.WithContext(ctx).First(hall, id).Error; err != nil {
-		return nil, utils.ErrNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, utils.NewNotFound("Hall not found", err)
+		}
+
+		return nil, utils.NewConflict("Failed to load hall", err)
 	}
 
 	return hall, nil
 }
 
 func (repo *HallRepository) Create(ctx context.Context, hall *models.Hall) (*models.Hall, error) {
-	err := repo.db.WithContext(ctx).Create(hall).Error
-	if err != nil {
-		return nil, utils.ErrRecordAlreadyExist
+	if err := repo.db.WithContext(ctx).Create(hall).Error; err != nil {
+		return nil, utils.NewInvalidInput("Failed to create hall", err)
 	}
 
 	return hall, nil
 }
 
 func (repo *HallRepository) Update(ctx context.Context, id uint, hall *models.Hall) (*models.Hall, error) {
-	existHall := &models.Hall{}
+	existingHall := &models.Hall{}
 
-	if err := repo.db.WithContext(ctx).First(existHall, id).Error; err != nil {
-		return nil, utils.ErrNotFound
+	if err := repo.db.WithContext(ctx).First(existingHall, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, utils.NewNotFound("Hall not found", err)
+		}
+
+		return nil, utils.NewConflict("Failed to load hall", err)
 	}
 
-	existHall.Name = hall.Name
-	existHall.Location = hall.Location
-	existHall.Capacity = hall.Capacity
+	existingHall.Name = hall.Name
+	existingHall.Location = hall.Location
+	existingHall.Capacity = hall.Capacity
 
-	if err := repo.db.WithContext(ctx).Save(existHall).Error; err != nil {
-		return nil, utils.ErrConflict
+	if err := repo.db.WithContext(ctx).Save(existingHall).Error; err != nil {
+		return nil, utils.NewConflict("Failed to update hall", err)
 	}
 
-	return existHall, nil
+	return existingHall, nil
 }
 
 func (repo *HallRepository) Delete(ctx context.Context, id uint) error {
-	return repo.db.WithContext(ctx).Delete(&models.Hall{}, id).Error
+	existingHall := &models.Hall{}
+
+	if err := repo.db.WithContext(ctx).First(existingHall, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.NewNotFound("Hall not found", err)
+		}
+
+		return utils.NewConflict("Failed to load hall", err)
+	}
+
+	if err := repo.db.WithContext(ctx).Delete(existingHall).Error; err != nil {
+		return utils.NewConflict("Failed to delete hall", err)
+	}
+
+	return nil
 }

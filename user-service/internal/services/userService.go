@@ -4,7 +4,6 @@ import (
 	"context"
 	"user-service/internal/dto"
 	"user-service/internal/models"
-	"user-service/internal/secure"
 	"user-service/internal/utils"
 )
 
@@ -33,7 +32,7 @@ func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*m
 func (s *UserService) Register(ctx context.Context, user *models.User) (*models.User, error) {
 	existedUser, err := s.repo.GetUserByFilter(ctx, &dto.UserFilter{Email: &user.Email})
 	if err == nil && existedUser != nil {
-		return nil, secure.NewAuthFailed("User already exist", err)
+		return nil, utils.NewAuthFailed("User already exist", err)
 	}
 
 	hashedPassword, err := utils.HashedPassword(user.Password)
@@ -55,12 +54,12 @@ func (s *UserService) Register(ctx context.Context, user *models.User) (*models.
 func (s *UserService) Login(ctx context.Context, user *models.User) (*models.User, error) {
 	existedUser, err := s.repo.GetUserByFilter(ctx, &dto.UserFilter{Email: &user.Email})
 	if err != nil {
-		return nil, secure.NewAuthFailed("Invalid credentials", err)
+		return nil, utils.NewAuthFailed("Invalid credentials", err)
 	}
 
 	err = utils.VerifyPassword(existedUser.Password, user.Password)
 	if err != nil {
-		return nil, secure.NewAuthFailed("Invalid credentials", err)
+		return nil, utils.NewAuthFailed("Invalid credentials", err)
 	}
 
 	return existedUser, nil

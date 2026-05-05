@@ -3,17 +3,11 @@ package service
 import (
 	"context"
 	"errors"
-	"log"
-	"movie-service/internal/dto"
-	"movie-service/internal/models"
-	"movie-service/utils"
 	"strings"
 
-	"gorm.io/gorm"
-)
-
-var (
-	ErrRecordAlreadyExist = errors.New("record already exist")
+	"movie-service/internal/dto"
+	"movie-service/internal/models"
+	"movie-service/internal/utils"
 )
 
 type GenreRepository interface {
@@ -33,83 +27,120 @@ func NewGenreService(repo GenreRepository) *GenreService {
 }
 
 func (service *GenreService) GetGenres(ctx context.Context) ([]*models.Genre, error) {
-	genres, err := service.repo.GetAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	log.Print("Genres from service: ", genres)
-
-	return genres, nil
+	return service.repo.GetAll(ctx)
 }
 
 func (service *GenreService) GetGenreByFilter(ctx context.Context, filter *dto.GenreFilter) (*models.Genre, error) {
-	genre, err := service.repo.GetByFilter(ctx, filter)
-	if err != nil {
-		return nil, err
+	if filter == nil {
+		return nil, utils.NewInvalidInput(
+			"Invalid genre filter",
+			errors.New("GenreService.GetGenreByFilter -> filter is nil"),
+		)
 	}
 
-	return genre, nil
+	return service.repo.GetByFilter(ctx, filter)
 }
 
 func (service *GenreService) CreateGenre(ctx context.Context, genre *models.Genre) (*models.Genre, error) {
+	trimGenreSpaces(genre)
+
 	if err := validateGenre(genre); err != nil {
 		return nil, err
 	}
 
-	name := strings.TrimSpace(genre.Name)
+	existingGenre, err := service.repo.GetByFilter(ctx, &dto.GenreFilter{
+		Name: &genre.Name,
+	})
 
-	existGenre, err := service.repo.GetByFilter(ctx, &dto.GenreFilter{Name: &name})
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if err != nil && !isSafeNotFound(err) {
 		return nil, err
 	}
 
-	if existGenre != nil {
-		return nil, ErrRecordAlreadyExist
+	if existingGenre != nil {
+		return nil, utils.NewConflict(
+			"Genre already exists",
+			errors.New("GenreService.CreateGenre -> duplicate genre name"),
+		)
 	}
 
-	createdGenre, err := service.repo.Create(ctx, genre)
-	if err != nil {
-		return nil, err
-	}
-
-	return createdGenre, nil
+	return service.repo.Create(ctx, genre)
 }
 
 func (service *GenreService) UpdateGenre(ctx context.Context, genre *models.Genre, id uint) (*models.Genre, error) {
+	if id == 0 {
+		return nil, utils.NewInvalidInput(
+			"Invalid genre id",
+			errors.New("GenreService.UpdateGenre -> id is zero"),
+		)
+	}
+
+	trimGenreSpaces(genre)
+
 	if err := validateGenre(genre); err != nil {
 		return nil, err
 	}
 
-	updatedGenre, err := service.repo.Update(ctx, genre, id)
-	if err != nil {
+	existingGenre, err := service.repo.GetByFilter(ctx, &dto.GenreFilter{
+		Name: &genre.Name,
+	})
+
+	if err != nil && !isSafeNotFound(err) {
 		return nil, err
 	}
 
-	return updatedGenre, nil
+	if existingGenre != nil && existingGenre.ID != id {
+		return nil, utils.NewConflict(
+			"Genre already exists",
+			errors.New("GenreService.UpdateGenre -> duplicate genre name"),
+		)
+	}
+
+	return service.repo.Update(ctx, genre, id)
 }
 
 func (service *GenreService) DeleteGenre(ctx context.Context, id uint) error {
 	if id == 0 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Invalid genre id",
+			errors.New("GenreService.DeleteGenre -> id is zero"),
+		)
 	}
 
-	err := service.repo.Delete(ctx, id)
-	if err != nil {
-		return err
+	return service.repo.Delete(ctx, id)
+}
+
+func validateGenre(genre *models.Genre) error {
+	if genre == nil {
+		return utils.NewInvalidInput(
+			"Invalid genre data",
+			errors.New("validateGenre -> genre is nil"),
+		)
+	}
+
+	if strings.TrimSpace(genre.Name) == "" {
+		return utils.NewInvalidInput(
+			"Genre name is required",
+			errors.New("validateGenre -> name is empty"),
+		)
 	}
 
 	return nil
 }
 
-func validateGenre(genre *models.Genre) error {
+func trimGenreSpaces(genre *models.Genre) {
 	if genre == nil {
-		return utils.ErrInvalidInput
+		return
 	}
 
-	if strings.TrimSpace(genre.Name) == "" {
-		return utils.ErrInvalidInput
+	genre.Name = strings.TrimSpace(genre.Name)
+}
+
+func isSafeNotFound(err error) bool {
+	var safeErr *utils.SafeError
+
+	if !errors.As(err, &safeErr) {
+		return false
 	}
 
-	return nil
+	return safeErr.Code == "NOT_FOUND"
 }

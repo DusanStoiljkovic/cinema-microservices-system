@@ -4,6 +4,7 @@ import (
 	"booking-service/internal/models"
 	"booking-service/internal/utils"
 	"context"
+	"errors"
 )
 
 type ProjectionRepository interface {
@@ -28,11 +29,25 @@ func (service *ProjectionService) GetAllProjections(ctx context.Context) ([]*mod
 }
 
 func (service *ProjectionService) GetProjectionByID(ctx context.Context, id uint) (*models.Projection, error) {
+	if id == 0 {
+		return nil, utils.NewInvalidInput(
+			"Invalid projection id",
+			errors.New("ProjectionService.GetProjectionByID -> id is zero"),
+		)
+	}
+
 	return service.repo.GetByID(ctx, id)
 }
 
-func (service *ProjectionService) GetProjectionsByMovieID(ctx context.Context, id uint) ([]*models.Projection, error) {
-	return service.repo.GetByMovieID(ctx, id)
+func (service *ProjectionService) GetProjectionsByMovieID(ctx context.Context, movieID uint) ([]*models.Projection, error) {
+	if movieID == 0 {
+		return nil, utils.NewInvalidInput(
+			"Invalid movie id",
+			errors.New("ProjectionService.GetProjectionsByMovieID -> movie id is zero"),
+		)
+	}
+
+	return service.repo.GetByMovieID(ctx, movieID)
 }
 
 func (service *ProjectionService) CreateProjection(ctx context.Context, projection *models.Projection) (*models.Projection, error) {
@@ -44,6 +59,13 @@ func (service *ProjectionService) CreateProjection(ctx context.Context, projecti
 }
 
 func (service *ProjectionService) UpdateProjection(ctx context.Context, id uint, projection *models.Projection) (*models.Projection, error) {
+	if id == 0 {
+		return nil, utils.NewInvalidInput(
+			"Invalid projection id",
+			errors.New("ProjectionService.UpdateProjection -> id is zero"),
+		)
+	}
+
 	if err := validateProjection(projection); err != nil {
 		return nil, err
 	}
@@ -52,32 +74,64 @@ func (service *ProjectionService) UpdateProjection(ctx context.Context, id uint,
 }
 
 func (service *ProjectionService) DeleteProjection(ctx context.Context, id uint) error {
+	if id == 0 {
+		return utils.NewInvalidInput(
+			"Invalid projection id",
+			errors.New("ProjectionService.DeleteProjection -> id is zero"),
+		)
+	}
+
 	return service.repo.Delete(ctx, id)
 }
 
 func validateProjection(projection *models.Projection) error {
 	if projection == nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Invalid projection data",
+			errors.New("validateProjection -> projection is nil"),
+		)
 	}
 
 	if projection.MovieID == 0 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Movie id is required",
+			errors.New("validateProjection -> movie id is zero"),
+		)
 	}
 
 	if projection.HallID == 0 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Hall id is required",
+			errors.New("validateProjection -> hall id is zero"),
+		)
 	}
 
 	if projection.StartTime.IsZero() {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Start time is required",
+			errors.New("validateProjection -> start time is zero"),
+		)
 	}
 
 	if projection.EndTime.IsZero() {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"End time is required",
+			errors.New("validateProjection -> end time is zero"),
+		)
+	}
+
+	if !projection.EndTime.After(projection.StartTime) {
+		return utils.NewInvalidInput(
+			"End time must be after start time",
+			errors.New("validateProjection -> end time is not after start time"),
+		)
 	}
 
 	if projection.Price <= 0 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Price must be greater than zero",
+			errors.New("validateProjection -> price must be greater than zero"),
+		)
 	}
 
 	return nil

@@ -3,12 +3,11 @@ package service
 import (
 	"context"
 	"errors"
-	"movie-service/internal/dto"
-	"movie-service/internal/models"
-	"movie-service/utils"
 	"strings"
 
-	"gorm.io/gorm"
+	"movie-service/internal/dto"
+	"movie-service/internal/models"
+	"movie-service/internal/utils"
 )
 
 type MovieRepository interface {
@@ -60,11 +59,17 @@ func (service *MovieService) GetMovies(
 	}
 
 	if minYear != 0 && maxYear != 0 && minYear > maxYear {
-		return nil, utils.ErrInvalidInput
+		return nil, utils.NewInvalidInput(
+			"Invalid year range",
+			errors.New("MovieService.GetMovies -> minYear is greater than maxYear"),
+		)
 	}
 
 	if minRating < 0 || minRating > 10 {
-		return nil, utils.ErrInvalidInput
+		return nil, utils.NewInvalidInput(
+			"Invalid minimum rating",
+			errors.New("MovieService.GetMovies -> minRating must be between 0 and 10"),
+		)
 	}
 
 	safeSort, err := mapSort(sort)
@@ -79,194 +84,188 @@ func (service *MovieService) GetMovies(
 
 func (service *MovieService) GetMovieByID(ctx context.Context, id uint) (*models.Movie, error) {
 	if id == 0 {
-		return nil, utils.ErrInvalidInput
+		return nil, utils.NewInvalidInput(
+			"Invalid movie id",
+			errors.New("MovieService.GetMovieByID -> id is zero"),
+		)
 	}
 
-	movie, err := service.repo.GetMovieByID(ctx, id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, utils.ErrRecordNotFound) {
-			return nil, utils.ErrNotFound
-		}
-
-		return nil, err
-	}
-
-	return movie, nil
+	return service.repo.GetMovieByID(ctx, id)
 }
 
 func (service *MovieService) GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error) {
 	if id == 0 {
-		return nil, utils.ErrGenreNotFound
+		return nil, utils.NewInvalidInput(
+			"Invalid movie id",
+			errors.New("MovieService.GetRelationsByMovieID -> id is zero"),
+		)
 	}
 
-	relations, err := service.repo.GetRelationsByMovieID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	return relations, nil
+	return service.repo.GetRelationsByMovieID(ctx, id)
 }
 
 func (service *MovieService) CreateMovie(ctx context.Context, movie *models.Movie) (*models.Movie, error) {
+	trimMovieSpaces(movie)
+
 	if err := validateMovie(movie); err != nil {
 		return nil, err
 	}
 
-	trimSpace(movie)
-
-	createdMovie, err := service.repo.Create(ctx, movie)
-	if err != nil {
-		if errors.Is(err, utils.ErrGenreNotFound) {
-			return nil, utils.ErrInvalidInput
-		}
-
-		return nil, err
-	}
-
-	return createdMovie, nil
+	return service.repo.Create(ctx, movie)
 }
 
 func (service *MovieService) CreateRelation(ctx context.Context, movieID, genreID uint) (*models.Movie, error) {
-	if movieID == 0 || genreID == 0 {
-		return nil, utils.ErrInvalidInput
+	if movieID == 0 {
+		return nil, utils.NewInvalidInput(
+			"Invalid movie id",
+			errors.New("MovieService.CreateRelation -> movie id is zero"),
+		)
 	}
 
-	existMovie, err := service.repo.GetMovieByID(ctx, movieID)
+	if genreID == 0 {
+		return nil, utils.NewInvalidInput(
+			"Invalid genre id",
+			errors.New("MovieService.CreateRelation -> genre id is zero"),
+		)
+	}
+
+	existingMovie, err := service.repo.GetMovieByID(ctx, movieID)
 	if err != nil {
 		return nil, err
 	}
 
-	existGenre, err := service.genreRepo.GetByFilter(ctx, &dto.GenreFilter{ID: &genreID})
+	existingGenre, err := service.genreRepo.GetByFilter(ctx, &dto.GenreFilter{ID: &genreID})
 	if err != nil {
 		return nil, err
 	}
 
-	if existMovie == nil || existGenre == nil {
-		return nil, utils.ErrRecordNotFound
-	}
-
-	movie, err := service.repo.CreateRelation(ctx, existMovie, existGenre)
-	if err != nil {
-		return nil, err
-	}
-
-	return movie, nil
+	return service.repo.CreateRelation(ctx, existingMovie, existingGenre)
 }
 
 func (service *MovieService) UpdateMovie(ctx context.Context, id uint, movie *models.Movie) (*models.Movie, error) {
 	if id == 0 {
-		return nil, utils.ErrInvalidInput
+		return nil, utils.NewInvalidInput(
+			"Invalid movie id",
+			errors.New("MovieService.UpdateMovie -> id is zero"),
+		)
 	}
+
+	trimMovieSpaces(movie)
 
 	if err := validateMovie(movie); err != nil {
 		return nil, err
 	}
 
-	trimSpace(movie)
-
-	updatedMovie, err := service.repo.Update(ctx, id, movie)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, utils.ErrRecordNotFound) {
-			return nil, utils.ErrNotFound
-		}
-
-		if errors.Is(err, utils.ErrGenreNotFound) {
-			return nil, utils.ErrInvalidInput
-		}
-
-		return nil, err
-	}
-
-	return updatedMovie, nil
+	return service.repo.Update(ctx, id, movie)
 }
 
 func (service *MovieService) DeleteMovie(ctx context.Context, id uint) error {
 	if id == 0 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Invalid movie id",
+			errors.New("MovieService.DeleteMovie -> id is zero"),
+		)
 	}
 
-	err := service.repo.Delete(ctx, id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, utils.ErrRecordNotFound) {
-			return utils.ErrNotFound
-		}
-
-		return err
-	}
-
-	return nil
+	return service.repo.Delete(ctx, id)
 }
 
 func (service *MovieService) DeleteRelation(ctx context.Context, movieID, genreID uint) error {
-	if movieID == 0 || genreID == 0 {
-		return utils.ErrInvalidInput
+	if movieID == 0 {
+		return utils.NewInvalidInput(
+			"Invalid movie id",
+			errors.New("MovieService.DeleteRelation -> movie id is zero"),
+		)
 	}
 
-	existMovie, err := service.repo.GetMovieByID(ctx, movieID)
-	if err != nil {
+	if genreID == 0 {
+		return utils.NewInvalidInput(
+			"Invalid genre id",
+			errors.New("MovieService.DeleteRelation -> genre id is zero"),
+		)
+	}
+
+	if _, err := service.repo.GetMovieByID(ctx, movieID); err != nil {
 		return err
 	}
 
-	existGenre, err := service.genreRepo.GetByFilter(ctx, &dto.GenreFilter{ID: &genreID})
-	if err != nil {
+	if _, err := service.genreRepo.GetByFilter(ctx, &dto.GenreFilter{ID: &genreID}); err != nil {
 		return err
 	}
 
-	if existMovie == nil || existGenre == nil {
-		return utils.ErrRecordNotFound
-	}
-
-	err = service.repo.DeleteRelation(ctx, movieID, genreID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return service.repo.DeleteRelation(ctx, movieID, genreID)
 }
 
 func validateMovie(movie *models.Movie) error {
 	if movie == nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Invalid movie data",
+			errors.New("validateMovie -> movie is nil"),
+		)
 	}
 
 	if strings.TrimSpace(movie.Title) == "" {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Movie title is required",
+			errors.New("validateMovie -> title is empty"),
+		)
 	}
 
 	if strings.TrimSpace(movie.Description) == "" {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Movie description is required",
+			errors.New("validateMovie -> description is empty"),
+		)
 	}
 
 	if strings.TrimSpace(movie.ImageURL) == "" {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Movie image URL is required",
+			errors.New("validateMovie -> image URL is empty"),
+		)
 	}
 
 	if movie.Year < 1888 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Movie year is invalid",
+			errors.New("validateMovie -> year is before 1888"),
+		)
 	}
 
 	if movie.Duration <= 0 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Movie duration must be greater than zero",
+			errors.New("validateMovie -> duration must be greater than zero"),
+		)
 	}
 
 	if movie.Rating < 0 || movie.Rating > 10 {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput(
+			"Movie rating must be between 0 and 10",
+			errors.New("validateMovie -> rating must be between 0 and 10"),
+		)
 	}
 
 	for _, genre := range movie.Genres {
 		if genre.ID == 0 {
-			return utils.ErrInvalidInput
+			return utils.NewInvalidInput(
+				"Invalid genre id",
+				errors.New("validateMovie -> genre id is zero"),
+			)
 		}
 	}
 
 	return nil
 }
 
-func trimSpace(movie *models.Movie) {
+func trimMovieSpaces(movie *models.Movie) {
+	if movie == nil {
+		return
+	}
+
 	movie.Title = strings.TrimSpace(movie.Title)
 	movie.Description = strings.TrimSpace(movie.Description)
 	movie.ImageURL = strings.TrimSpace(movie.ImageURL)
-
 	movie.Genres = uniqueGenres(movie.Genres)
 }
 
@@ -307,6 +306,9 @@ func mapSort(sort string) (string, error) {
 	case "title_desc":
 		return "title DESC", nil
 	default:
-		return "", utils.ErrInvalidInput
+		return "", utils.NewInvalidInput(
+			"Invalid sort parameter",
+			errors.New("mapSort -> unsupported sort value: "+sort),
+		)
 	}
 }

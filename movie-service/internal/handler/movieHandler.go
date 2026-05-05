@@ -3,12 +3,14 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+
 	"movie-service/internal/dto"
 	"movie-service/internal/mapper"
 	"movie-service/internal/models"
-	"movie-service/utils"
-	"net/http"
-	"strconv"
+	"movie-service/internal/utils"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -69,7 +71,7 @@ func (handler *MovieHandler) HandleGetMovies(w http.ResponseWriter, r *http.Requ
 func (handler *MovieHandler) HandleGetMovieByID(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid movie id", err)
 	}
 
 	movie, err := handler.service.GetMovieByID(r.Context(), id)
@@ -83,7 +85,7 @@ func (handler *MovieHandler) HandleGetMovieByID(w http.ResponseWriter, r *http.R
 func (handler *MovieHandler) HandleGetRelationsByMovieID(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid movie id", err)
 	}
 
 	relations, err := handler.service.GetRelationsByMovieID(r.Context(), id)
@@ -95,13 +97,13 @@ func (handler *MovieHandler) HandleGetRelationsByMovieID(w http.ResponseWriter, 
 }
 
 func (handler *MovieHandler) HandleCreateMovie(w http.ResponseWriter, r *http.Request) error {
-	var req dto.MovieRequest
+	req := &dto.MovieRequest{}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return utils.ErrInvalidInput
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
-	movie := mapper.MovieFromRequest(req)
+	movie := mapper.MovieFromRequest(*req)
 
 	createdMovie, err := handler.service.CreateMovie(r.Context(), movie)
 	if err != nil {
@@ -112,17 +114,17 @@ func (handler *MovieHandler) HandleCreateMovie(w http.ResponseWriter, r *http.Re
 }
 
 func (handler *MovieHandler) HandleCreateRelation(w http.ResponseWriter, r *http.Request) error {
-	movieId, err := parseIDParam(r, "movieId")
+	movieID, err := parseIDParam(r, "movieId")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid movie id", err)
 	}
 
-	genreId, err := parseIDParam(r, "genreId")
+	genreID, err := parseIDParam(r, "genreId")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid genre id", err)
 	}
 
-	movie, err := handler.service.CreateRelation(r.Context(), movieId, genreId)
+	movie, err := handler.service.CreateRelation(r.Context(), movieID, genreID)
 	if err != nil {
 		return err
 	}
@@ -133,16 +135,16 @@ func (handler *MovieHandler) HandleCreateRelation(w http.ResponseWriter, r *http
 func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid movie id", err)
 	}
 
-	var req dto.MovieRequest
+	req := &dto.MovieRequest{}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return utils.ErrInvalidInput
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
-	movie := mapper.MovieFromRequest(req)
+	movie := mapper.MovieFromRequest(*req)
 
 	updatedMovie, err := handler.service.UpdateMovie(r.Context(), id, movie)
 	if err != nil {
@@ -155,7 +157,7 @@ func (handler *MovieHandler) HandleUpdateMovie(w http.ResponseWriter, r *http.Re
 func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseIDParam(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid movie id", err)
 	}
 
 	if err := handler.service.DeleteMovie(r.Context(), id); err != nil {
@@ -167,18 +169,17 @@ func (handler *MovieHandler) HandleDeleteMovie(w http.ResponseWriter, r *http.Re
 }
 
 func (handler *MovieHandler) HandleDeleteRelation(w http.ResponseWriter, r *http.Request) error {
-	movieId, err := parseIDParam(r, "movieId")
+	movieID, err := parseIDParam(r, "movieId")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid movie id", err)
 	}
 
-	genreId, err := parseIDParam(r, "genreId")
+	genreID, err := parseIDParam(r, "genreId")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid genre id", err)
 	}
 
-	err = handler.service.DeleteRelation(r.Context(), movieId, genreId)
-	if err != nil {
+	if err := handler.service.DeleteRelation(r.Context(), movieID, genreID); err != nil {
 		return err
 	}
 
@@ -189,9 +190,13 @@ func (handler *MovieHandler) HandleDeleteRelation(w http.ResponseWriter, r *http
 func parseIDParam(r *http.Request, param string) (uint, error) {
 	value := chi.URLParam(r, param)
 
-	id, err := strconv.Atoi(value)
+	id, err := strconv.ParseUint(value, 10, 32)
 	if err != nil {
 		return 0, err
+	}
+
+	if id == 0 {
+		return 0, errors.New("id must be greater than zero")
 	}
 
 	return uint(id), nil

@@ -1,31 +1,30 @@
 package middleware
 
 import (
+	"booking-service/internal/utils"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
-
-	"movie-service/internal/utils"
 )
 
-type AppHandler func(http.ResponseWriter, *http.Request) error
+type AppHandler func(w http.ResponseWriter, r *http.Request) error
 
 type ErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
 
-func ErrorHandler(handlerF AppHandler) http.HandlerFunc {
+func ErrorHandler(handler AppHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := handlerF(w, r); err != nil {
-			handleError(w, r, err)
+		if err := handler(w, r); err != nil {
+			HandleHTTPError(w, r, err)
 			return
 		}
 	}
 }
 
-func handleError(w http.ResponseWriter, r *http.Request, err error) {
+func HandleHTTPError(w http.ResponseWriter, r *http.Request, err error) {
 	var safeErr *utils.SafeError
 
 	if !errors.As(err, &safeErr) {

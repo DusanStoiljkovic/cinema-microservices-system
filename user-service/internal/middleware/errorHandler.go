@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"user-service/internal/secure"
 	"user-service/internal/utils"
 )
+
+type AppHandler func(w http.ResponseWriter, r *http.Request) error
 
 func ErrorHandler(next AppHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +16,7 @@ func ErrorHandler(next AppHandler) http.HandlerFunc {
 			return
 		}
 
-		var safeErr *secure.SafeError
+		var safeErr *utils.SafeError
 
 		if errors.As(err, &safeErr) {
 			fmt.Println(safeErr.LogString()) // log

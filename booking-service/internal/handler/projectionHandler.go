@@ -33,14 +33,13 @@ func (handler *ProjectionHandler) HandleGetAllProjections(w http.ResponseWriter,
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, projections)
-	return nil
+	return utils.WriteJSON(w, http.StatusOK, projections)
 }
 
 func (handler *ProjectionHandler) HandleGetProjectionByID(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseParamID(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid projection id", err)
 	}
 
 	projection, err := handler.service.GetProjectionByID(r.Context(), id)
@@ -48,30 +47,28 @@ func (handler *ProjectionHandler) HandleGetProjectionByID(w http.ResponseWriter,
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, projection)
-	return nil
+	return utils.WriteJSON(w, http.StatusOK, projection)
 }
 
 func (handler *ProjectionHandler) HandleGetProjectionsByMovieID(w http.ResponseWriter, r *http.Request) error {
-	id, err := parseParamID(r, "id")
+	movieID, err := parseParamID(r, "movie_id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid movie id", err)
 	}
 
-	projections, err := handler.service.GetProjectionsByMovieID(r.Context(), id)
+	projections, err := handler.service.GetProjectionsByMovieID(r.Context(), movieID)
 	if err != nil {
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, projections)
-	return nil
+	return utils.WriteJSON(w, http.StatusOK, projections)
 }
 
 func (handler *ProjectionHandler) HandleCreateProjection(w http.ResponseWriter, r *http.Request) error {
 	req := &dto.ProjectionRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
 	projection := mapper.ProjectionFromRequest(req)
@@ -81,20 +78,19 @@ func (handler *ProjectionHandler) HandleCreateProjection(w http.ResponseWriter, 
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, createdProjection)
-	return nil
+	return utils.WriteJSON(w, http.StatusCreated, createdProjection)
 }
 
 func (handler *ProjectionHandler) HandleUpdateProjection(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseParamID(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid projection id", err)
 	}
 
 	req := &dto.ProjectionRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
 	projection := mapper.ProjectionFromRequest(req)
@@ -104,15 +100,19 @@ func (handler *ProjectionHandler) HandleUpdateProjection(w http.ResponseWriter, 
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, updatedProjection)
-	return nil
+	return utils.WriteJSON(w, http.StatusOK, updatedProjection)
 }
 
 func (handler *ProjectionHandler) HandleDeleteProjection(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseParamID(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid projection id", err)
 	}
 
-	return handler.service.DeleteProjection(r.Context(), id)
+	if err := handler.service.DeleteProjection(r.Context(), id); err != nil {
+		return err
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+	return nil
 }

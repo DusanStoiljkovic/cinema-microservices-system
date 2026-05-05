@@ -7,7 +7,6 @@ import (
 	"booking-service/internal/utils"
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -43,7 +42,7 @@ func (handler *HallHandler) HandleGetAllHalls(w http.ResponseWriter, r *http.Req
 func (handler *HallHandler) HandleGetHallByID(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseParamID(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid hall id", err)
 	}
 
 	hall, err := handler.service.GetHallByID(r.Context(), id)
@@ -58,12 +57,12 @@ func (handler *HallHandler) HandleGetHallByID(w http.ResponseWriter, r *http.Req
 func (handler *HallHandler) HandleCreateHall(w http.ResponseWriter, r *http.Request) error {
 	req := &dto.HallRequest{}
 
-	err := json.NewDecoder(r.Body).Decode(req)
-	if err != nil {
-		return utils.ErrInvalidInput
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
 	hall := mapper.HallFromRequest(req)
+
 	createdHall, err := handler.service.CreateHall(r.Context(), hall)
 	if err != nil {
 		return err
@@ -76,19 +75,16 @@ func (handler *HallHandler) HandleCreateHall(w http.ResponseWriter, r *http.Requ
 func (handler *HallHandler) HandleUpdateHall(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseParamID(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid hall id", err)
 	}
 
 	req := &dto.HallRequest{}
 
-	err = json.NewDecoder(r.Body).Decode(req)
-	if err != nil {
-		return utils.ErrInvalidInput
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
 	hall := mapper.HallFromRequest(req)
-
-	log.Println("Hall iz Handlera: ", hall)
 
 	updatedHall, err := handler.service.UpdateHall(r.Context(), id, hall)
 	if err != nil {
@@ -102,11 +98,10 @@ func (handler *HallHandler) HandleUpdateHall(w http.ResponseWriter, r *http.Requ
 func (handler *HallHandler) HandleDeleteHall(w http.ResponseWriter, r *http.Request) error {
 	id, err := parseParamID(r, "id")
 	if err != nil {
-		return utils.ErrInvalidInput
+		return utils.NewInvalidInput("Invalid hall id", err)
 	}
 
-	err = handler.service.DeleteHall(r.Context(), id)
-	if err != nil {
+	if err := handler.service.DeleteHall(r.Context(), id); err != nil {
 		return err
 	}
 
@@ -117,10 +112,14 @@ func (handler *HallHandler) HandleDeleteHall(w http.ResponseWriter, r *http.Requ
 func parseParamID(r *http.Request, param string) (uint, error) {
 	id := chi.URLParam(r, param)
 
-	idParam, err := strconv.Atoi(id)
+	parsedID, err := strconv.ParseUint(id, 10, 32)
 	if err != nil {
 		return 0, err
 	}
 
-	return uint(idParam), nil
+	if parsedID == 0 {
+		return 0, strconv.ErrSyntax
+	}
+
+	return uint(parsedID), nil
 }

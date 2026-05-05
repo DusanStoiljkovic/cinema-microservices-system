@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
+
 	"movie-service/internal/models"
-	"movie-service/utils"
+	"movie-service/internal/utils"
 
 	"gorm.io/gorm"
 )
@@ -63,7 +65,14 @@ func (repo *MovieRepository) GetMovies(
 	}
 
 	if err := query.Find(&movies).Error; err != nil {
-		return nil, err
+		return nil, utils.NewConflict("Failed to load movies", err)
+	}
+
+	if len(movies) == 0 {
+		return nil, utils.NewNotFound(
+			"Movies not found",
+			errors.New("MovieRepository.GetMovies -> empty list"),
+		)
 	}
 
 	return movies, nil
@@ -79,7 +88,11 @@ func (repo *MovieRepository) GetMovieByID(ctx context.Context, id uint) (*models
 		Error
 
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, utils.NewNotFound("Movie not found", err)
+		}
+
+		return nil, utils.NewConflict("Failed to load movie", err)
 	}
 
 	return &movie, nil
@@ -88,9 +101,25 @@ func (repo *MovieRepository) GetMovieByID(ctx context.Context, id uint) (*models
 func (repo *MovieRepository) GetRelationsByMovieID(ctx context.Context, id uint) ([]models.Genre, error) {
 	var movie models.Movie
 
-	err := repo.db.WithContext(ctx).Preload("Genres").First(&movie, id).Error
+	err := repo.db.
+		WithContext(ctx).
+		Preload("Genres").
+		First(&movie, id).
+		Error
+
 	if err != nil {
-		return nil, utils.ErrNotFound
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, utils.NewNotFound("Movie not found", err)
+		}
+
+		return nil, utils.NewConflict("Failed to load movie genres", err)
+	}
+
+	if len(movie.Genres) == 0 {
+		return nil, utils.NewNotFound(
+			"Movie genres not found",
+			errors.New("MovieRepository.GetRelationsByMovieID -> empty genre list"),
+		)
 	}
 
 	return movie.Genres, nil
@@ -108,16 +137,20 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 		movie.Genres = nil
 
 		if err := tx.Create(movie).Error; err != nil {
-			return err
+			return utils.NewInvalidInput("Failed to create movie", err)
 		}
 
 		if len(genres) > 0 {
 			if err := tx.Model(movie).Association("Genres").Replace(genres); err != nil {
-				return err
+				return utils.NewConflict("Failed to attach genres to movie", err)
 			}
 		}
 
-		return tx.Preload("Genres").First(movie, movie.ID).Error
+		if err := tx.Preload("Genres").First(movie, movie.ID).Error; err != nil {
+			return utils.NewConflict("Movie created, but failed to reload movie with genres", err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -130,17 +163,18 @@ func (repo *MovieRepository) Create(ctx context.Context, movie *models.Movie) (*
 func (repo *MovieRepository) CreateRelation(ctx context.Context, movie *models.Movie, genre *models.Genre) (*models.Movie, error) {
 	var createdRelation models.Movie
 
-	err := repo.db.WithContext(ctx).Model(movie).Association("Genres").Append(genre)
-	if err != nil {
-		return nil, err
+	if err := repo.db.WithContext(ctx).Model(movie).Association("Genres").Append(genre); err != nil {
+		return nil, utils.NewConflict("Failed to create movie genre relation", err)
 	}
 
-	err = repo.db.WithContext(ctx).Preload("Genres").First(&createdRelation, movie.ID).Error
-	if err != nil {
-		return nil, err
+	if err := repo.db.
+		WithContext(ctx).
+		Preload("Genres").
+		First(&createdRelation, movie.ID).Error; err != nil {
+		return nil, utils.NewConflict("Failed to load movie with genres", err)
 	}
 
-	return &createdRelation, err
+	return &createdRelation, nil
 }
 
 func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *models.Movie) (*models.Movie, error) {
@@ -151,7 +185,11 @@ func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *
 
 	err := repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Preload("Genres").First(&movie, id).Error; err != nil {
-			return err
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return utils.NewNotFound("Movie not found", err)
+			}
+
+			return utils.NewConflict("Failed to load movie", err)
 		}
 
 		movie.Title = updatedMovie.Title
@@ -162,7 +200,7 @@ func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *
 		movie.Rating = updatedMovie.Rating
 
 		if err := tx.Save(&movie).Error; err != nil {
-			return err
+			return utils.NewConflict("Failed to update movie", err)
 		}
 
 		if shouldUpdateGenres {
@@ -172,11 +210,15 @@ func (repo *MovieRepository) Update(ctx context.Context, id uint, updatedMovie *
 			}
 
 			if err := tx.Model(&movie).Association("Genres").Replace(genres); err != nil {
-				return err
+				return utils.NewConflict("Failed to update movie genres", err)
 			}
 		}
 
-		return tx.Preload("Genres").First(&movie, id).Error
+		if err := tx.Preload("Genres").First(&movie, id).Error; err != nil {
+			return utils.NewConflict("Movie updated, but failed to reload movie with genres", err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
@@ -191,14 +233,22 @@ func (repo *MovieRepository) Delete(ctx context.Context, id uint) error {
 		var movie models.Movie
 
 		if err := tx.First(&movie, id).Error; err != nil {
-			return err
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return utils.NewNotFound("Movie not found", err)
+			}
+
+			return utils.NewConflict("Failed to load movie", err)
 		}
 
 		if err := tx.Model(&movie).Association("Genres").Clear(); err != nil {
-			return err
+			return utils.NewConflict("Failed to clear movie genres", err)
 		}
 
-		return tx.Delete(&movie).Error
+		if err := tx.Delete(&movie).Error; err != nil {
+			return utils.NewConflict("Failed to delete movie", err)
+		}
+
+		return nil
 	})
 }
 
@@ -206,19 +256,24 @@ func (repo *MovieRepository) DeleteRelation(ctx context.Context, movieID, genreI
 	var movie models.Movie
 	var genre models.Genre
 
-	err := repo.db.WithContext(ctx).First(&movie, movieID).Error
-	if err != nil {
-		return utils.ErrNotFound
+	if err := repo.db.WithContext(ctx).First(&movie, movieID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.NewNotFound("Movie not found", err)
+		}
+
+		return utils.NewConflict("Failed to load movie", err)
 	}
 
-	err = repo.db.WithContext(ctx).First(&genre, genreID).Error
-	if err != nil {
-		return utils.ErrNotFound
+	if err := repo.db.WithContext(ctx).First(&genre, genreID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return utils.NewNotFound("Genre not found", err)
+		}
+
+		return utils.NewConflict("Failed to load genre", err)
 	}
 
-	err = repo.db.WithContext(ctx).Model(&movie).Association("Genres").Delete(&genre)
-	if err != nil {
-		return err
+	if err := repo.db.WithContext(ctx).Model(&movie).Association("Genres").Delete(&genre); err != nil {
+		return utils.NewConflict("Failed to delete movie genre relation", err)
 	}
 
 	return nil
@@ -232,11 +287,14 @@ func (repo *MovieRepository) findGenresByIDs(tx *gorm.DB, genreIDs []uint) ([]mo
 	var genres []models.Genre
 
 	if err := tx.Where("id IN ?", genreIDs).Find(&genres).Error; err != nil {
-		return nil, err
+		return nil, utils.NewConflict("Failed to load genres", err)
 	}
 
 	if len(genres) != len(genreIDs) {
-		return nil, utils.ErrGenreNotFound
+		return nil, utils.NewNotFound(
+			"One or more genres not found",
+			errors.New("MovieRepository.findGenresByIDs -> genre count mismatch"),
+		)
 	}
 
 	return genres, nil
