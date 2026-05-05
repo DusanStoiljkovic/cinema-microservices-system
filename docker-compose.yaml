@@ -8,7 +8,7 @@ services:
     depends_on:
       - user-service
       - movie-service
-      # - booking-service
+      - booking-service
     env_file:
       - ./api-gateway/api-gateway.env
     networks:
@@ -62,29 +62,30 @@ services:
     networks:
       - cinema-network
 
-  # # BOOKING SERVICE + DB
-  # booking-db:
-  #   image: mysql:8.0
-  #   container_name: booking-db
-  #   restart: always
-  #   env_file:
-  #     - ./bookingService/booking-service.env
-  #   volumes:
-  #     - booking-db-data:/var/lib/mysql
-  #   networks:
-  #     - cinema-network
+  # BOOKING SERVICE + DB
+  booking-db:
+    image: mysql:8.0
+    ports:
+      - "3309:3306"
+    container_name: booking-db
+    restart: always
+    env_file:
+      - ./booking-service/booking-service.env
+    volumes:
+      - booking-db-data:/var/lib/mysql
+    networks:
+      - cinema-network
 
-  # booking-service:
-  #   build: ./booking-service
-  #   container_name: booking-service
-  #   depends_on:
-  #     - booking-db
-  #     - nats
-  #     - redis
-  #   env_file:
-  #     - ./bookingService/booking-service.env
-  #   networks:
-  #     - cinema-network
+  booking-service:
+    build: ./booking-service
+    container_name: booking-service
+    depends_on:
+      - booking-db
+      - redis
+    env_file:
+      - ./booking-service/booking-service.env
+    networks:
+      - cinema-network
 
   # REDIS
   redis:
@@ -101,4 +102,4 @@ networks:
 volumes:
   user-db-data:
   movie-db-data:
-  # booking-db-data:
+  booking-db-data:
