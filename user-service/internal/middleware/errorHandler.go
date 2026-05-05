@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
+	"log/slog"
 	"net/http"
+
 	"user-service/internal/utils"
 )
 
@@ -11,24 +12,29 @@ type AppHandler func(w http.ResponseWriter, r *http.Request) error
 
 func ErrorHandler(next AppHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := next(w, r)
-		if err == nil {
+		if err := next(w, r); err != nil {
+			handleError(w, r, err)
 			return
 		}
-
-		var safeErr *utils.SafeError
-
-		if errors.As(err, &safeErr) {
-			fmt.Println(safeErr.LogString()) // log
-
-			utils.WriteJSON(w, http.StatusUnauthorized, map[string]string{
-				"error": safeErr.UserMsg,
-				"code":  safeErr.Code,
-			})
-			return
-		}
-
-		fmt.Println("UNKNOWN ERROR: ", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
+}
+
+func handleError(w http.ResponseWriter, r *http.Request, err error) {
+	var safeErr *utils.SafeError
+
+	if !errors.As(err, &safeErr) {
+		safeErr = utils.NewInternal("Internal server error", err)
+	}
+
+	slog.Error(
+		"request failed",
+		slog.String("method", r.Method),
+		slog.String("path", r.URL.Path),
+		slog.Any("error", safeErr),
+	)
+
+	utils.WriteJSON(w, safeErr.Status, map[string]string{
+		"error": safeErr.UserMsg,
+		"code":  safeErr.Code,
+	})
 }

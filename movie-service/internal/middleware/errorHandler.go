@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -9,16 +8,11 @@ import (
 	"movie-service/internal/utils"
 )
 
-type AppHandler func(http.ResponseWriter, *http.Request) error
+type AppHandler func(w http.ResponseWriter, r *http.Request) error
 
-type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
-func ErrorHandler(handlerF AppHandler) http.HandlerFunc {
+func ErrorHandler(next AppHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := handlerF(w, r); err != nil {
+		if err := next(w, r); err != nil {
 			handleError(w, r, err)
 			return
 		}
@@ -39,11 +33,8 @@ func handleError(w http.ResponseWriter, r *http.Request, err error) {
 		slog.Any("error", safeErr),
 	)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(safeErr.Status)
-
-	_ = json.NewEncoder(w).Encode(ErrorResponse{
-		Code:    safeErr.Code,
-		Message: safeErr.UserMsg,
+	utils.WriteJSON(w, safeErr.Status, map[string]string{
+		"error": safeErr.UserMsg,
+		"code":  safeErr.Code,
 	})
 }

@@ -49,6 +49,21 @@ func (repo *HallRepository) GetByID(ctx context.Context, id uint) (*models.Hall,
 }
 
 func (repo *HallRepository) Create(ctx context.Context, hall *models.Hall) (*models.Hall, error) {
+	exists, err := repo.existsSameHall(ctx, 0, hall)
+	if err != nil {
+		return nil, utils.NewConflict(
+			"Failed to check existing hall",
+			err,
+		)
+	}
+
+	if exists {
+		return nil, utils.NewConflict(
+			"Hall already exists",
+			errors.New("HallRepository.Create -> duplicate hall"),
+		)
+	}
+
 	if err := repo.db.WithContext(ctx).Create(hall).Error; err != nil {
 		return nil, utils.NewInvalidInput("Failed to create hall", err)
 	}
@@ -65,6 +80,21 @@ func (repo *HallRepository) Update(ctx context.Context, id uint, hall *models.Ha
 		}
 
 		return nil, utils.NewConflict("Failed to load hall", err)
+	}
+
+	exists, err := repo.existsSameHall(ctx, id, hall)
+	if err != nil {
+		return nil, utils.NewConflict(
+			"Failed to check existing hall",
+			err,
+		)
+	}
+
+	if exists {
+		return nil, utils.NewConflict(
+			"Hall already exists",
+			errors.New("HallRepository.Update -> duplicate hall"),
+		)
 	}
 
 	existingHall.Name = hall.Name
@@ -94,4 +124,29 @@ func (repo *HallRepository) Delete(ctx context.Context, id uint) error {
 	}
 
 	return nil
+}
+
+func (repo *HallRepository) existsSameHall(ctx context.Context, excludeID uint, hall *models.Hall) (bool, error) {
+	existingHall := &models.Hall{}
+
+	query := repo.db.WithContext(ctx).
+		Where("name = ?",
+			hall.Name,
+		)
+
+	if excludeID != 0 {
+		query = query.Where("id <> ?", excludeID)
+	}
+
+	err := query.First(existingHall).Error
+
+	if err == nil {
+		return true, err
+	}
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+
+	return false, err
 }

@@ -1,30 +1,25 @@
 package middleware
 
 import (
-	"booking-service/internal/utils"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+
+	"booking-service/internal/utils"
 )
 
 type AppHandler func(w http.ResponseWriter, r *http.Request) error
 
-type ErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
-func ErrorHandler(handler AppHandler) http.HandlerFunc {
+func ErrorHandler(next AppHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := handler(w, r); err != nil {
-			HandleHTTPError(w, r, err)
+		if err := next(w, r); err != nil {
+			handleError(w, r, err)
 			return
 		}
 	}
 }
 
-func HandleHTTPError(w http.ResponseWriter, r *http.Request, err error) {
+func handleError(w http.ResponseWriter, r *http.Request, err error) {
 	var safeErr *utils.SafeError
 
 	if !errors.As(err, &safeErr) {
@@ -38,11 +33,8 @@ func HandleHTTPError(w http.ResponseWriter, r *http.Request, err error) {
 		slog.Any("error", safeErr),
 	)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(safeErr.Status)
-
-	_ = json.NewEncoder(w).Encode(ErrorResponse{
-		Code:    safeErr.Code,
-		Message: safeErr.UserMsg,
+	utils.WriteJSON(w, safeErr.Status, map[string]string{
+		"error": safeErr.UserMsg,
+		"code":  safeErr.Code,
 	})
 }

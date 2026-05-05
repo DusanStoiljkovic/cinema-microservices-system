@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+
 	"user-service/internal/dto"
 	"user-service/internal/middleware"
 	"user-service/internal/models"
@@ -22,98 +23,97 @@ type UserService interface {
 }
 
 type UserHandler struct {
-	service UserService
+	service  UserService
+	validate *validator.Validate
 }
 
 func NewUserHandler(service UserService) *UserHandler {
-	return &UserHandler{service: service}
+	return &UserHandler{
+		service:  service,
+		validate: validator.New(),
+	}
 }
 
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) error {
-	ctx := r.Context()
-
-	userID, ok := ctx.Value(middleware.UserIDKey).(uint)
-	if ok {
-		return utils.NewAuthFailed("Unauthorized", errors.New("Unauthorized"))
+	userID, ok := r.Context().Value(middleware.UserIDKey).(uint)
+	if !ok {
+		return utils.NewAuthFailed(
+			"Unauthorized",
+			errors.New("UserHandler.GetMe -> user id missing from context"),
+		)
 	}
 
 	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: userID})
 	if err != nil {
-		return utils.NewAuthFailed(err.Error(), err)
+		return err
 	}
 
-	json.NewEncoder(w).Encode(&dto.UserResponse{
+	return utils.WriteJSON(w, http.StatusOK, dto.UserResponse{
 		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 	})
-
-	return nil
 }
 
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) error {
-	idParam := chi.URLParam(r, "id")
-	userID, err := strconv.Atoi(idParam)
+	userID, err := parseIDParam(r, "id")
 	if err != nil {
-		return utils.NewAuthFailed("Invalid user ID", err)
+		return utils.NewInvalidInput("Invalid user id", err)
 	}
 
-	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: uint(userID)})
+	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: userID})
 	if err != nil {
-		return utils.NewAuthFailed("User does not exist", err)
+		return err
 	}
 
-	json.NewEncoder(w).Encode(&dto.UserResponse{
+	return utils.WriteJSON(w, http.StatusOK, dto.UserResponse{
 		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 	})
-
-	return nil
 }
 
 func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) error {
-	var request dto.RegisterRequest
-	var validate = validator.New()
+	req := &dto.RegisterRequest{}
 
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		return utils.NewAuthFailed("Invalid request body", err)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
-	err = validate.Struct(request)
-	if err != nil {
-		return utils.NewAuthFailed("Validation failed", err)
+	if err := h.validate.Struct(req); err != nil {
+		return utils.NewInvalidInput("Validation failed", err)
 	}
 
 	user, err := h.service.Register(r.Context(), &models.User{
-		Name:     request.Name,
-		Email:    request.Email,
-		Password: request.Password,
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: req.Password,
 	})
 	if err != nil {
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, dto.UserResponse{
+	return utils.WriteJSON(w, http.StatusCreated, dto.UserResponse{
 		Name:      user.Name,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
 	})
-	return nil
 }
 
 func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
-	request := &dto.LoginRequest{}
+	req := &dto.LoginRequest{}
 
-	err := json.NewDecoder(r.Body).Decode(request)
-	if err != nil {
-		return utils.NewAuthFailed("Invalid request body", err)
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid request body", err)
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		return utils.NewInvalidInput("Validation failed", err)
 	}
 
 	user, err := h.service.Login(r.Context(), &models.User{
-		Email:    request.Email,
-		Password: request.Password,
+		Email:    req.Email,
+		Password: req.Password,
 	})
 	if err != nil {
 		return err
@@ -121,13 +121,28 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
 
 	token, err := middleware.CreateToken(user.ID, user.Email)
 	if err != nil {
-		return err
+		return utils.NewAuthFailed(
+			"Failed to create authentication token",
+			err,
+		)
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"JWT": token,
+	return utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"jwt": token,
 	})
+}
 
-	return nil
+func parseIDParam(r *http.Request, param string) (uint, error) {
+	value := chi.URLParam(r, param)
 
+	id, err := strconv.ParseUint(value, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	if id == 0 {
+		return 0, errors.New("id must be greater than zero")
+	}
+
+	return uint(id), nil
 }
