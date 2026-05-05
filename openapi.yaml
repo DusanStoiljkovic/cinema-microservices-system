@@ -1,266 +1,1287 @@
 openapi: 3.0.3
+
 info:
   title: Cinema Microservices System API
+  description: |
+    REST API documentation for Cinema Microservices System.
+
+    The system is built using Go and a microservices-style architecture.
+    Requests go through the API Gateway and are routed to User Service,
+    Movie Service, and Booking Service.
   version: 1.0.0
-  description: API Gateway for Cinema Microservices System
 
 servers:
   - url: http://localhost:8080
+    description: Local API Gateway
+
+tags:
+  - name: Users
+    description: User registration, login and profile
+  - name: Movies
+    description: Movie management
+  - name: Genres
+    description: Genre management
+  - name: Movie-Genre Relations
+    description: Relations between movies and genres
+  - name: Halls
+    description: Cinema hall management
+  - name: Projections
+    description: Movie projection management
+  - name: Tickets
+    description: Ticket management
 
 paths:
-
-  # USER SERVICE
-
   /api/users/register:
     post:
+      tags:
+        - Users
       summary: Register user
+      operationId: registerUser
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RegisterRequest'
+              $ref: "#/components/schemas/RegisterRequest"
+            example:
+              name: Dusan
+              email: dusan@example.com
+              password: password123
       responses:
-        200:
-          description: User created
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/users/login:
     post:
+      tags:
+        - Users
       summary: Login user
+      operationId: loginUser
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest'
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              email: dusan@example.com
+              password: password123
       responses:
-        200:
-          description: JWT token
+        "200":
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "401":
+          $ref: "#/components/responses/AuthFailed"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/users/me:
     get:
-      summary: Get current user
+      tags:
+        - Users
+      summary: Get current authenticated user
+      operationId: getMe
       security:
         - bearerAuth: []
       responses:
-        200:
-          description: User info
+        "200":
+          description: Current user returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          $ref: "#/components/responses/AuthFailed"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/users/{id}:
     get:
+      tags:
+        - Users
       summary: Get user by ID
+      operationId: getUserById
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/IdParam"
       responses:
-        200:
-          description: User
-
-  # MOVIE SERVICE
+        "200":
+          description: User returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/movies:
     get:
+      tags:
+        - Movies
       summary: Get all movies
+      operationId: getMovies
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 10
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - newest
+              - oldest
+              - rating_desc
+              - rating_asc
+              - year_desc
+              - year_asc
+              - title_asc
+              - title_desc
+            example: rating_desc
+        - name: genre
+          in: query
+          required: false
+          schema:
+            type: string
+            example: Action
+        - name: min_year
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 2000
+        - name: max_year
+          in: query
+          required: false
+          schema:
+            type: integer
+            example: 2026
+        - name: min_rating
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+            example: 7.5
       responses:
-        200:
-          description: List of movies
+        "200":
+          description: Movies returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Movie"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
     post:
+      tags:
+        - Movies
       summary: Create movie
+      operationId: createMovie
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Movie'
+              $ref: "#/components/schemas/MovieRequest"
+            example:
+              title: The Dark Knight
+              description: Batman faces the Joker in Gotham City.
+              year: 2008
+              image_url: https://example.com/dark-knight.jpg
+              duration: 152
+              rating: 9.0
+              genres:
+                - id: 1
+                - id: 2
       responses:
-        201:
-          description: Created
+        "201":
+          description: Movie created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movie"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/movies/{id}:
     get:
+      tags:
+        - Movies
       summary: Get movie by ID
+      operationId: getMovieById
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/IdParam"
       responses:
-        200:
-          description: Movie
+        "200":
+          description: Movie returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movie"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
     put:
-      summary: Update movie
+      tags:
+        - Movies
+      summary: Update movie by ID
+      operationId: updateMovieById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MovieRequest"
+            example:
+              title: The Dark Knight
+              description: Updated movie description.
+              year: 2008
+              image_url: https://example.com/dark-knight.jpg
+              duration: 152
+              rating: 9.1
+              genres:
+                - id: 1
       responses:
-        200:
-          description: Updated
+        "200":
+          description: Movie updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movie"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
     delete:
-      summary: Delete movie
+      tags:
+        - Movies
+      summary: Delete movie by ID
+      operationId: deleteMovieById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
       responses:
-        204:
-          description: Deleted
+        "204":
+          description: Movie deleted successfully
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
-  # GENRES
+  /api/movies/{id}/genres:
+    get:
+      tags:
+        - Movie-Genre Relations
+      summary: Get genres by movie ID
+      operationId: getRelationsByMovieId
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Movie genres returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Genre"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/movies/{movieId}/genres/{genreId}:
+    post:
+      tags:
+        - Movie-Genre Relations
+      summary: Create movie-genre relation
+      operationId: createMovieGenreRelation
+      parameters:
+        - $ref: "#/components/parameters/MovieIdParam"
+        - $ref: "#/components/parameters/GenreIdParam"
+      responses:
+        "201":
+          description: Relation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movie"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags:
+        - Movie-Genre Relations
+      summary: Delete movie-genre relation
+      operationId: deleteMovieGenreRelation
+      parameters:
+        - $ref: "#/components/parameters/MovieIdParam"
+        - $ref: "#/components/parameters/GenreIdParam"
+      responses:
+        "204":
+          description: Relation deleted successfully
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/genres:
     get:
-      summary: Get genres
+      tags:
+        - Genres
+      summary: Get all genres
+      operationId: getGenres
       responses:
-        200:
-          description: List
+        "200":
+          description: Genres returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Genre"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
     post:
+      tags:
+        - Genres
       summary: Create genre
-      responses:
-        201:
-          description: Created
-
-  # BOOKING SERVICE
-
-  /api/tickets:
-    post:
-      summary: Create ticket
+      operationId: createGenre
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Ticket'
+              $ref: "#/components/schemas/GenreRequest"
+            example:
+              name: Action
       responses:
-        201:
-          description: Ticket created
+        "201":
+          description: Genre created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Genre"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
-  /api/tickets/{id}:
-    get:
-      summary: Get ticket
+  /api/genres/{id}:
+    delete:
+      tags:
+        - Genres
+      summary: Delete genre by ID
+      operationId: deleteGenreById
       parameters:
-        - name: id
-          in: path
-          schema:
-            type: integer
+        - $ref: "#/components/parameters/IdParam"
       responses:
-        200:
-          description: Ticket
+        "204":
+          description: Genre deleted successfully
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
-  /api/theaters:
+  /api/halls:
     get:
-      summary: Get theaters
+      tags:
+        - Halls
+      summary: Get all halls
+      operationId: getHalls
       responses:
-        200:
-          description: List
+        "200":
+          description: Halls returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hall"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
     post:
-      summary: Create theater
+      tags:
+        - Halls
+      summary: Create hall
+      operationId: createHall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HallRequest"
+            example:
+              name: Sala 1
+              location: Pozoriste
+              capacity: 200
       responses:
-        201:
-          description: Created
+        "201":
+          description: Hall created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hall"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
-  /api/schedules:
+  /api/halls/{id}:
     get:
-      summary: Get schedules
+      tags:
+        - Halls
+      summary: Get hall by ID
+      operationId: getHallById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
       responses:
-        200:
-          description: List
+        "200":
+          description: Hall returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hall"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags:
+        - Halls
+      summary: Update hall by ID
+      operationId: updateHallById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HallRequest"
+            example:
+              name: Sala 1
+              location: Pozoriste
+              capacity: 250
+      responses:
+        "200":
+          description: Hall updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hall"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags:
+        - Halls
+      summary: Delete hall by ID
+      operationId: deleteHallById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Hall deleted successfully
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/projections:
+    get:
+      tags:
+        - Projections
+      summary: Get all projections
+      operationId: getProjections
+      responses:
+        "200":
+          description: Projections returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Projection"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
     post:
-      summary: Create schedule
+      tags:
+        - Projections
+      summary: Create projection
+      operationId: createProjection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectionRequest"
+            example:
+              movie_id: 1
+              hall_id: 1
+              start_time: "2026-05-05T18:00:00+02:00"
+              end_time: "2026-05-05T20:00:00+02:00"
+              price: 500
       responses:
-        201:
-          description: Created
+        "201":
+          description: Projection created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projection"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
-  # RECOMMENDATION
-
-  /api/recommendations/{userId}:
+  /api/projections/{id}:
     get:
-      summary: Get recommendations
+      tags:
+        - Projections
+      summary: Get projection by ID
+      operationId: getProjectionById
       parameters:
-        - name: userId
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Projection returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projection"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    put:
+      tags:
+        - Projections
+      summary: Update projection by ID
+      operationId: updateProjectionById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectionRequest"
+            example:
+              movie_id: 1
+              hall_id: 1
+              start_time: "2026-05-05T19:00:00+02:00"
+              end_time: "2026-05-05T21:00:00+02:00"
+              price: 550
+      responses:
+        "200":
+          description: Projection updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Projection"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags:
+        - Projections
+      summary: Delete projection by ID
+      operationId: deleteProjectionById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Projection deleted successfully
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/projections/movie/{movie_id}:
+    get:
+      tags:
+        - Projections
+      summary: Get projections by movie ID
+      operationId: getProjectionsByMovieId
+      parameters:
+        - name: movie_id
           in: path
           required: true
           schema:
             type: integer
+            format: uint
+            example: 1
       responses:
-        200:
-          description: Recommendations
+        "200":
+          description: Projections returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Projection"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
-  /api/watch-history:
+  /api/tickets:
+    get:
+      tags:
+        - Tickets
+      summary: Get all tickets
+      operationId: getTickets
+      responses:
+        "200":
+          description: Tickets returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ticket"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
     post:
-      summary: Add watch history
+      tags:
+        - Tickets
+      summary: Create ticket
+      operationId: createTicket
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WatchHistory'
+              $ref: "#/components/schemas/TicketRequest"
+            example:
+              user_id: 1
+              projection_id: 1
+              seat_number: A10
       responses:
-        201:
-          description: Added
+        "201":
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
-# COMPONENTS
+  /api/tickets/{id}:
+    get:
+      tags:
+        - Tickets
+      summary: Get ticket by ID
+      operationId: getTicketById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Ticket returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      tags:
+        - Tickets
+      summary: Delete ticket by ID
+      operationId: deleteTicketById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "204":
+          description: Ticket deleted successfully
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/tickets/user/{user_id}:
+    get:
+      tags:
+        - Tickets
+      summary: Get tickets by user ID
+      operationId: getTicketsByUserId
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: uint
+            example: 1
+      responses:
+        "200":
+          description: Tickets returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ticket"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/tickets/schedule/{schedule_id}:
+    get:
+      tags:
+        - Tickets
+      summary: Get tickets by schedule ID
+      operationId: getTicketsByScheduleId
+      parameters:
+        - name: schedule_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: uint
+            example: 1
+      responses:
+        "200":
+          description: Tickets returned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ticket"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/tickets/{id}/cancel:
+    patch:
+      tags:
+        - Tickets
+      summary: Cancel ticket by ID
+      operationId: cancelTicketById
+      parameters:
+        - $ref: "#/components/parameters/IdParam"
+      responses:
+        "200":
+          description: Ticket cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+        "400":
+          $ref: "#/components/responses/InvalidInput"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
 components:
-
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
 
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: uint
+        example: 1
+
+    MovieIdParam:
+      name: movieId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: uint
+        example: 1
+
+    GenreIdParam:
+      name: genreId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: uint
+        example: 1
+
+  responses:
+    InvalidInput:
+      description: Invalid input
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: INVALID_INPUT
+            error: Invalid request body
+
+    AuthFailed:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: AUTH_FAILED
+            error: Unauthorized
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: NOT_FOUND
+            error: Resource not found
+
+    Conflict:
+      description: Resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: CONFLICT
+            error: Resource conflict
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: INTERNAL_ERROR
+            error: Internal server error
+
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID_INPUT
+        error:
+          type: string
+          example: Invalid request body
 
     RegisterRequest:
       type: object
-      required: [name, email, password]
+      required:
+        - name
+        - email
+        - password
       properties:
         name:
           type: string
+          example: Dusan
         email:
           type: string
+          format: email
+          example: dusan@example.com
         password:
           type: string
+          format: password
+          example: password123
 
     LoginRequest:
       type: object
-      required: [email, password]
+      required:
+        - email
+        - password
       properties:
         email:
           type: string
+          format: email
+          example: dusan@example.com
         password:
           type: string
+          format: password
+          example: password123
+
+    LoginResponse:
+      type: object
+      properties:
+        jwt:
+          type: string
+          example: your.jwt.token
+
+    UserResponse:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Dusan
+        email:
+          type: string
+          format: email
+          example: dusan@example.com
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-05T12:00:00Z"
+
+    Genre:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint
+          example: 1
+        name:
+          type: string
+          example: Action
+
+    GenreRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Action
 
     Movie:
       type: object
       properties:
+        id:
+          type: integer
+          format: uint
+          example: 1
         title:
           type: string
+          example: The Dark Knight
         description:
           type: string
-        duration:
+          example: Batman faces the Joker in Gotham City.
+        year:
           type: integer
-        release_date:
-          type: string
-          format: date
+          example: 2008
         image_url:
           type: string
+          example: https://example.com/dark-knight.jpg
+        duration:
+          type: integer
+          example: 152
+        rating:
+          type: number
+          format: float
+          example: 9.0
+        genres:
+          type: array
+          items:
+            $ref: "#/components/schemas/Genre"
+
+    MovieRequest:
+      type: object
+      required:
+        - title
+        - description
+        - year
+        - image_url
+        - duration
+        - rating
+      properties:
+        title:
+          type: string
+          example: The Dark Knight
+        description:
+          type: string
+          example: Batman faces the Joker in Gotham City.
+        year:
+          type: integer
+          example: 2008
+        image_url:
+          type: string
+          example: https://example.com/dark-knight.jpg
+        duration:
+          type: integer
+          example: 152
+        rating:
+          type: number
+          format: float
+          example: 9.0
+        genres:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: uint
+                example: 1
+
+    Hall:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint
+          example: 1
+        name:
+          type: string
+          example: Sala 1
+        location:
+          type: string
+          example: Pozoriste
+        capacity:
+          type: integer
+          example: 200
+
+    HallRequest:
+      type: object
+      required:
+        - name
+        - location
+        - capacity
+      properties:
+        name:
+          type: string
+          example: Sala 1
+        location:
+          type: string
+          example: Pozoriste
+        capacity:
+          type: integer
+          example: 200
+
+    Projection:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: uint
+          example: 1
+        movie_id:
+          type: integer
+          format: uint
+          example: 1
+        hall_id:
+          type: integer
+          format: uint
+          example: 1
+        start_time:
+          type: string
+          format: date-time
+          example: "2026-05-05T18:00:00+02:00"
+        end_time:
+          type: string
+          format: date-time
+          example: "2026-05-05T20:00:00+02:00"
+        price:
+          type: number
+          format: float
+          example: 500
+        hall:
+          $ref: "#/components/schemas/Hall"
+
+    ProjectionRequest:
+      type: object
+      required:
+        - movie_id
+        - hall_id
+        - start_time
+        - end_time
+        - price
+      properties:
+        movie_id:
+          type: integer
+          format: uint
+          example: 1
+        hall_id:
+          type: integer
+          format: uint
+          example: 1
+        start_time:
+          type: string
+          format: date-time
+          example: "2026-05-05T18:00:00+02:00"
+        end_time:
+          type: string
+          format: date-time
+          example: "2026-05-05T20:00:00+02:00"
+        price:
+          type: number
+          format: float
+          example: 500
 
     Ticket:
       type: object
       properties:
+        id:
+          type: integer
+          format: uint
+          example: 1
         user_id:
           type: integer
-        schedule_id:
+          format: uint
+          example: 1
+        projection_id:
           type: integer
-        seat_id:
-          type: integer
+          format: uint
+          example: 1
+        seat_number:
+          type: string
+          example: A10
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - CANCELLED
+          example: ACTIVE
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-05T12:00:00Z"
 
-    WatchHistory:
+    TicketRequest:
       type: object
+      required:
+        - user_id
+        - projection_id
+        - seat_number
       properties:
         user_id:
           type: integer
-        movie_id:
+          format: uint
+          example: 1
+        projection_id:
           type: integer
-        rating:
-          type: integer
+          format: uint
+          example: 1
+        seat_number:
+          type: string
+          example: A10

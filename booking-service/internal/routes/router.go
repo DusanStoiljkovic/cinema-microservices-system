@@ -25,6 +25,16 @@ type ProjectionHandler interface {
 	HandleDeleteProjection(w http.ResponseWriter, r *http.Request) error
 }
 
+type TicketHandler interface {
+	HandleGetAllTickets(w http.ResponseWriter, r *http.Request) error
+	HandleGetTicketByID(w http.ResponseWriter, r *http.Request) error
+	HandleGetTicketByUserID(w http.ResponseWriter, r *http.Request) error
+	HandleGetTicketByProjectionID(w http.ResponseWriter, r *http.Request) error
+	HandleCreateTicket(w http.ResponseWriter, r *http.Request) error
+	HandleCancelTicket(w http.ResponseWriter, r *http.Request) error
+	HandleDeleteTicket(w http.ResponseWriter, r *http.Request) error
+}
+
 func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler) http.Handler {
 	r := chi.NewRouter()
 
