@@ -8,6 +8,10 @@ This README is aligned with the current Postman collection for the project.
 
 ---
 
+## Diagram 
+<img width="1518" height="1036" alt="dbDiagram" src="https://github.com/user-attachments/assets/cf5c6eff-8835-48b9-a26b-3428c8b7a0c4" />
+
+
 ## Architecture
 
 The system is divided into several services:
