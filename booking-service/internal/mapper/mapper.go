@@ -22,3 +22,11 @@ func ProjectionFromRequest(req *dto.ProjectionRequest) *models.Projection {
 		Price:     req.Price,
 	}
 }
+
+func TicketFromRequest(req *dto.TicketRequest) *models.Ticket {
+	return &models.Ticket{
+		ProjectionID: req.ProjectionID,
+		OrderID:      req.OrderID,
+		SeatNumber:   req.SeatNumber,
+	}
+}

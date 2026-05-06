@@ -28,14 +28,13 @@ type ProjectionHandler interface {
 type TicketHandler interface {
 	HandleGetAllTickets(w http.ResponseWriter, r *http.Request) error
 	HandleGetTicketByID(w http.ResponseWriter, r *http.Request) error
-	HandleGetTicketByUserID(w http.ResponseWriter, r *http.Request) error
-	HandleGetTicketByProjectionID(w http.ResponseWriter, r *http.Request) error
+	HandleGetTicketsByUserID(w http.ResponseWriter, r *http.Request) error
+	HandleGetTicketsByProjectionID(w http.ResponseWriter, r *http.Request) error
 	HandleCreateTicket(w http.ResponseWriter, r *http.Request) error
-	HandleCancelTicket(w http.ResponseWriter, r *http.Request) error
 	HandleDeleteTicket(w http.ResponseWriter, r *http.Request) error
 }
 
-func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler) http.Handler {
+func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler, ticketHandler TicketHandler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Route("/halls", func(r chi.Router) {
@@ -53,6 +52,15 @@ func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler
 		r.Post("/", middleware.ErrorHandler(projectionHandler.HandleCreateProjection))
 		r.Put("/{id}", middleware.ErrorHandler(projectionHandler.HandleUpdateProjection))
 		r.Delete("/{id}", middleware.ErrorHandler(projectionHandler.HandleDeleteProjection))
+	})
+
+	r.Route("/tickets", func(r chi.Router) {
+		r.Get("/", middleware.ErrorHandler(ticketHandler.HandleGetAllTickets))
+		r.Get("/{id}", middleware.ErrorHandler(ticketHandler.HandleGetTicketByID))
+		r.Get("/users/{id}", middleware.ErrorHandler(ticketHandler.HandleGetTicketsByUserID))
+		r.Get("/projections/{id}", middleware.ErrorHandler(ticketHandler.HandleGetTicketsByProjectionID))
+		r.Post("/", middleware.ErrorHandler(ticketHandler.HandleCreateTicket))
+		r.Delete("/{id}", middleware.ErrorHandler(ticketHandler.HandleDeleteTicket))
 	})
 
 	return r

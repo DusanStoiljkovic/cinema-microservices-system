@@ -10,5 +10,7 @@ type Projection struct {
 	EndTime   time.Time `json:"end_time" gorm:"not null"`
 	Price     float64   `json:"price" gorm:"not null"`
 
+	Tickets []Ticket `json:"tickets" gorm:"foreignKey:ProjectionID"`
+
 	Hall Hall `json:"hall" gorm:"foreignKey:HallID"`
 }

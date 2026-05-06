@@ -29,24 +29,10 @@ func (service *ProjectionService) GetAllProjections(ctx context.Context) ([]*mod
 }
 
 func (service *ProjectionService) GetProjectionByID(ctx context.Context, id uint) (*models.Projection, error) {
-	if id == 0 {
-		return nil, utils.NewInvalidInput(
-			"Invalid projection id",
-			errors.New("ProjectionService.GetProjectionByID -> id is zero"),
-		)
-	}
-
 	return service.repo.GetByID(ctx, id)
 }
 
 func (service *ProjectionService) GetProjectionsByMovieID(ctx context.Context, movieID uint) ([]*models.Projection, error) {
-	if movieID == 0 {
-		return nil, utils.NewInvalidInput(
-			"Invalid movie id",
-			errors.New("ProjectionService.GetProjectionsByMovieID -> movie id is zero"),
-		)
-	}
-
 	return service.repo.GetByMovieID(ctx, movieID)
 }
 
