@@ -34,6 +34,17 @@ type TicketHandler interface {
 	HandleDeleteTicket(w http.ResponseWriter, r *http.Request) error
 }
 
+type OrderHandler interface {
+	HandleGetAllOrders(w http.ResponseWriter, r *http.Request) error
+	HandleGetOrderByID(w http.ResponseWriter, r *http.Request) error
+	HandleGetOrdersByUserID(w http.ResponseWriter, r *http.Request) error
+	HandleGetMyOrders(w http.ResponseWriter, r *http.Request) error
+	HandleCreateOrder(w http.ResponseWriter, r *http.Request) error
+	HandlePayOrder(w http.ResponseWriter, r *http.Request) error
+	HandleCancelOrder(w http.ResponseWriter, r *http.Request) error
+	HandleDeleteOrder(w http.ResponseWriter, r *http.Request) error
+}
+
 func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler, ticketHandler TicketHandler) http.Handler {
 	r := chi.NewRouter()
 
