@@ -4,15 +4,12 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"movie-service/internal/auth"
+	"movie-service/internal/utils"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
-
-	"user-service/internal/auth"
-	"user-service/internal/models"
-	"user-service/internal/utils"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -97,96 +94,4 @@ func extractBearerToken(r *http.Request) (string, error) {
 	}
 
 	return authHeader, nil
-}
-
-func CreateToken(user *models.User) (string, error) {
-	secret := os.Getenv("SECRET_KEY")
-	if secret == "" {
-		return "", utils.NewInternal(
-			"Server configuration error",
-			errors.New("auth.CreateToken -> SECRET_KEY is empty"),
-		)
-	}
-
-	if user == nil {
-		return "", utils.NewInvalidInput(
-			"Invalid user",
-			errors.New("auth.CreateToken -> user is nil"),
-		)
-	}
-
-	if user.ID == 0 {
-		return "", utils.NewInvalidInput(
-			"Invalid user id",
-			errors.New("auth.CreateToken() -> user id is zero"),
-		)
-	}
-
-	role := strings.TrimSpace(user.Role)
-	if role == "" {
-		role = "user"
-	}
-
-<<<<<<< HEAD
-	token := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			string(UserIDKey): ID,
-			"role":            "user",
-			"exp":             time.Now().Add(time.Hour).Unix(),
-		},
-	)
-=======
-	now := time.Now()
-
-	claims := jwt.MapClaims{
-		"sub": strconv.FormatUint(uint64(user.ID), 10),
-		"iss": "cinema-user-service",
-		"aud": "cinema-api",
-		"iat": now.Unix(),
-		"nbf": now.Unix(),
-		"exp": now.Add(1 * time.Hour).Unix(),
-
-		// Custom claims
-		"userID": user.ID,
-		"role":   role,
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
->>>>>>> main
-
-	tokenString, err := token.SignedString([]byte(secret))
-	if err != nil {
-		return "", utils.NewInternal(
-			"Failed to create token",
-			err,
-		)
-	}
-
-	return tokenString, nil
-}
-
-// API KEY MIDDLEWARE
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		secret := os.Getenv("SECRET_KEY")
-		if secret == "" {
-			utils.NewInternal(
-				"Server configuration error",
-				errors.New("AuthMiddleware -> SECRET_KEY is empty"),
-			)
-			return
-		}
-
-		apiKey := r.Header.Get("X-API-Key")
-		if apiKey != secret {
-			utils.NewAuthFailed(
-				"Forbidden",
-				errors.New("AuthMiddleware -> invalid api key"),
-			)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }

@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
+	"user-service/internal/auth"
 	"user-service/internal/dto"
 	"user-service/internal/middleware"
 	"user-service/internal/models"
@@ -35,11 +37,11 @@ func NewUserHandler(service UserService) *UserHandler {
 }
 
 func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) error {
-	userID, ok := r.Context().Value(middleware.UserIDKey).(uint)
+	userID, ok := r.Context().Value(auth.UserIDKey).(uint)
 	if !ok {
 		return utils.NewAuthFailed(
 			"Unauthorized",
-			errors.New("UserHandler.GetMe -> user id missing from context"),
+			errors.New(fmt.Sprintf("UserHandler.GetMe -> user id missing from context -> userID: %d", userID)),
 		)
 	}
 
@@ -119,7 +121,7 @@ func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	token, err := middleware.CreateToken(user.ID, user.Email)
+	token, err := middleware.CreateToken(user)
 	if err != nil {
 		return utils.NewAuthFailed(
 			"Failed to create authentication token",
