@@ -81,8 +81,8 @@ func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler
 		r.Get("/users/{id}", middleware.ErrorHandler(orderHandler.HandleGetOrdersByUserID))
 		r.Get("/me", middleware.ErrorHandler(orderHandler.HandleGetMyOrders))
 		r.Post("/", middleware.ErrorHandler(orderHandler.HandleCreateOrder))
-		r.Patch("/", middleware.ErrorHandler(orderHandler.HandlePayOrder))
-		r.Patch("/", middleware.ErrorHandler(orderHandler.HandleCancelOrder))
+		r.Patch("/pay/{id}", middleware.ErrorHandler(orderHandler.HandlePayOrder))
+		r.Patch("/cancel/{id}", middleware.ErrorHandler(orderHandler.HandleCancelOrder))
 		r.Delete("/{id}", middleware.ErrorHandler(orderHandler.HandleDeleteOrder))
 	})
 
