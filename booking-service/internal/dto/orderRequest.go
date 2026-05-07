@@ -9,7 +9,5 @@ const (
 )
 
 type OrderRequest struct {
-	TotalPrice uint `json:"total_price" gorm:"not null"`
-
-	Tickets []TicketRequest
+	Tickets []TicketRequest `json:"tickets"`
 }

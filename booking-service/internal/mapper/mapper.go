@@ -26,20 +26,18 @@ func ProjectionFromRequest(req *dto.ProjectionRequest) *models.Projection {
 func TicketFromRequest(req *dto.TicketRequest) *models.Ticket {
 	return &models.Ticket{
 		ProjectionID: req.ProjectionID,
-		OrderID:      req.OrderID,
 		SeatNumber:   req.SeatNumber,
 	}
 }
 
 func OrderFromRequest(req *dto.OrderRequest) *models.Order {
-	var tickets []models.Ticket
+	tickets := make([]models.Ticket, 0, len(req.Tickets))
 
 	for _, val := range req.Tickets {
 		tickets = append(tickets, *TicketFromRequest(&val))
 	}
 
 	return &models.Order{
-		TotalPrice: req.TotalPrice,
-		Tickets:    tickets,
+		Tickets: tickets,
 	}
 }

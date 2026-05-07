@@ -1,6 +1,7 @@
 package service
 
 import (
+	"booking-service/internal/auth"
 	"booking-service/internal/dto"
 	"booking-service/internal/mapper"
 	"booking-service/internal/models"
@@ -41,8 +42,7 @@ func (service *OrderService) GetOrdersByUserID(ctx context.Context, id uint) ([]
 }
 
 func (service *OrderService) GetMyOrders(ctx context.Context) ([]*models.Order, error) {
-	val := ctx.Value("userID")
-	userID, ok := val.(uint)
+	userID, ok := ctx.Value(auth.UserIDKey).(uint)
 	if !ok {
 		return nil, utils.NewAuthFailed("Unauthorized", errors.New("OrderService.GetMyOrders -> userID is not available/valid"))
 	}
@@ -51,8 +51,7 @@ func (service *OrderService) GetMyOrders(ctx context.Context) ([]*models.Order, 
 }
 
 func (service *OrderService) CreateOrder(ctx context.Context, orderReq *dto.OrderRequest) (*models.Order, error) {
-	val := ctx.Value("userID")
-	userID, ok := val.(uint)
+	userID, ok := ctx.Value(auth.UserIDKey).(uint)
 	if !ok {
 		return nil, utils.NewAuthFailed("Unauthorized", errors.New(fmt.Sprintf("OrderService.CreateOrder -> userID is not available/valid, userID=%d", userID)))
 	}

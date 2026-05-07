@@ -75,7 +75,6 @@ func (handler *OrderHandler) HandleGetMyOrders(w http.ResponseWriter, r *http.Re
 }
 
 func (handler *OrderHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) error {
-
 	req := &dto.OrderRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {

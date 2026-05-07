@@ -75,6 +75,7 @@ func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler
 	})
 
 	r.Route("/orders", func(r chi.Router) {
+		r.Use(middleware.JwtAuthMiddleware)
 		r.Get("/", middleware.ErrorHandler(orderHandler.HandleGetAllOrders))
 		r.Get("/{id}", middleware.ErrorHandler(orderHandler.HandleGetOrderByID))
 		r.Get("/users/{id}", middleware.ErrorHandler(orderHandler.HandleGetOrdersByUserID))

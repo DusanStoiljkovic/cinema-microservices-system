@@ -127,16 +127,6 @@ func CreateToken(user *models.User) (string, error) {
 		role = "user"
 	}
 
-<<<<<<< HEAD
-	token := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			string(UserIDKey): ID,
-			"role":            "user",
-			"exp":             time.Now().Add(time.Hour).Unix(),
-		},
-	)
-=======
 	now := time.Now()
 
 	claims := jwt.MapClaims{
@@ -153,7 +143,6 @@ func CreateToken(user *models.User) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
->>>>>>> main
 
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {

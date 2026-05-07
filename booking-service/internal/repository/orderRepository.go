@@ -63,31 +63,65 @@ func (repo *OrderRepository) GetByUserID(ctx context.Context, id uint) ([]*model
 }
 
 func (repo *OrderRepository) Create(ctx context.Context, order *models.Order) (*models.Order, error) {
-	err := repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		tickets := order.Tickets
+	if len(order.Tickets) == 0 {
+		return nil, errors.New("order must have at least one ticket")
+	}
 
-		if err := tx.Omit("Tickets").Create(order).Error; err != nil {
-			return utils.NewInvalidInput("Failed to create order", err)
+	err := repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// Provera da li ima dovoljno slobodnih mesta na toj projekciji
+		var reservedTickets []*models.Ticket
+
+		if err := tx.Where("projection_id = ?", order.Tickets[0].ProjectionID).Find(&reservedTickets).Error; err != nil {
+			return err
+		}
+
+		projection := &models.Projection{}
+
+		if err := tx.Select("id", "hall_id").First(projection, order.Tickets[0].ProjectionID).Error; err != nil {
+			return err
+		}
+
+		hall := &models.Hall{}
+
+		if err := tx.Select("id", "capacity").First(hall, projection.HallID).Error; err != nil {
+			return err
+		}
+
+		if (int(hall.Capacity) - len(reservedTickets)) < len(order.Tickets) {
+			return utils.NewConflict("There are no enough seats.", errors.New("OrderRepository.Create -> not enough seats for this projection"))
+		}
+
+		var totalPrice uint = 0
+
+		for i := range order.Tickets {
+			ticket := &order.Tickets[i]
+
+			projection := &models.Projection{}
+
+			if err := tx.
+				Select("id", "price").
+				First(projection, ticket.ProjectionID).Error; err != nil {
+				return err
+			}
+
+			totalPrice += uint(projection.Price)
+		}
+
+		order.TotalPrice = totalPrice
+
+		tickets := order.Tickets
+		order.Tickets = nil
+
+		if err := tx.Create(order).Error; err != nil {
+			return err
 		}
 
 		for i := range tickets {
 			tickets[i].OrderID = order.ID
+		}
 
-			exists, err := utils.ExistsSameTicket(tx, ctx, 0, &tickets[i])
-			if err != nil {
-				return utils.NewConflict("Failed to check existing ticket", err)
-			}
-
-			if exists {
-				return utils.NewConflict(
-					"Seat already reserved",
-					errors.New("OrderRepository.Create -> duplicate ticket"),
-				)
-			}
-
-			if err := tx.Create(&tickets[i]).Error; err != nil {
-				return utils.NewInvalidInput("Failed to create ticket", err)
-			}
+		if err := tx.Create(&tickets).Error; err != nil {
+			return err
 		}
 
 		order.Tickets = tickets
