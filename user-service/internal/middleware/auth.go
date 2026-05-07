@@ -179,7 +179,7 @@ func CreateToken(ID uint, email string) (string, error) {
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			string(UserIDKey): ID,
-			"email":           email,
+			"role":            "user",
 			"exp":             time.Now().Add(time.Hour).Unix(),
 		},
 	)

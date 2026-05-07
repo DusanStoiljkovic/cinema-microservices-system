@@ -92,7 +92,7 @@ func (repo *TicketRepository) GetByProjectionID(ctx context.Context, id uint) ([
 }
 
 func (repo *TicketRepository) Create(ctx context.Context, ticket *models.Ticket) (*models.Ticket, error) {
-	exists, err := repo.existsSameProjection(ctx, 0, ticket)
+	exists, err := utils.ExistsSameTicket(repo.db, ctx, 0, ticket)
 
 	if exists {
 		return nil, utils.NewConflict(
@@ -128,27 +128,4 @@ func (repo *TicketRepository) Delete(ctx context.Context, id uint) error {
 	}
 
 	return nil
-}
-
-func (repo *TicketRepository) existsSameProjection(ctx context.Context, excludeID uint, ticket *models.Ticket) (bool, error) {
-	existingTicket := &models.Ticket{}
-
-	query := repo.db.WithContext(ctx).Where("projection_id = ? AND order_id = ?, AND seat_number = ?",
-		ticket.ProjectionID, ticket.OrderID, ticket.SeatNumber)
-
-	if excludeID != 0 {
-		query = query.Where("id <> ?", excludeID)
-	}
-
-	err := query.First(existingTicket).Error
-
-	if err == nil {
-		return true, nil
-	}
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, nil
-	}
-
-	return false, err
 }

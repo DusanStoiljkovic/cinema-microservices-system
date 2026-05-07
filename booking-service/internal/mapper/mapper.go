@@ -30,3 +30,16 @@ func TicketFromRequest(req *dto.TicketRequest) *models.Ticket {
 		SeatNumber:   req.SeatNumber,
 	}
 }
+
+func OrderFromRequest(req *dto.OrderRequest) *models.Order {
+	var tickets []models.Ticket
+
+	for _, val := range req.Tickets {
+		tickets = append(tickets, *TicketFromRequest(&val))
+	}
+
+	return &models.Order{
+		TotalPrice: req.TotalPrice,
+		Tickets:    tickets,
+	}
+}

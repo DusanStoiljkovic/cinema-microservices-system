@@ -45,7 +45,7 @@ type OrderHandler interface {
 	HandleDeleteOrder(w http.ResponseWriter, r *http.Request) error
 }
 
-func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler, ticketHandler TicketHandler) http.Handler {
+func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler, ticketHandler TicketHandler, orderHandler OrderHandler) http.Handler {
 	r := chi.NewRouter()
 
 	r.Route("/halls", func(r chi.Router) {
@@ -72,6 +72,17 @@ func RegisterRouter(hallHandler HallHandler, projectionHandler ProjectionHandler
 		r.Get("/projections/{id}", middleware.ErrorHandler(ticketHandler.HandleGetTicketsByProjectionID))
 		r.Post("/", middleware.ErrorHandler(ticketHandler.HandleCreateTicket))
 		r.Delete("/{id}", middleware.ErrorHandler(ticketHandler.HandleDeleteTicket))
+	})
+
+	r.Route("/orders", func(r chi.Router) {
+		r.Get("/", middleware.ErrorHandler(orderHandler.HandleGetAllOrders))
+		r.Get("/{id}", middleware.ErrorHandler(orderHandler.HandleGetOrderByID))
+		r.Get("/users/{id}", middleware.ErrorHandler(orderHandler.HandleGetOrdersByUserID))
+		r.Get("/me/{id}", middleware.ErrorHandler(orderHandler.HandleGetMyOrders))
+		r.Post("/", middleware.ErrorHandler(orderHandler.HandleCreateOrder))
+		r.Patch("/", middleware.ErrorHandler(orderHandler.HandlePayOrder))
+		r.Patch("/", middleware.ErrorHandler(orderHandler.HandleCancelOrder))
+		r.Delete("/{id}", middleware.ErrorHandler(orderHandler.HandleDeleteOrder))
 	})
 
 	return r

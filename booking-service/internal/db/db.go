@@ -28,7 +28,7 @@ func Connect() (*gorm.DB, error) {
 		if err == nil {
 			fmt.Println("Connected to Booking Database...")
 
-			err = db.AutoMigrate(&models.Hall{}, &models.Projection{}, &models.Ticket{})
+			err = db.AutoMigrate(&models.Hall{}, &models.Projection{}, &models.Ticket{}, &models.Order{})
 			if err != nil {
 				log.Fatal("Migration failed in Booking Database...")
 			} else {
