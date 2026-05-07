@@ -28,12 +28,13 @@ func NewTicketHandler(service TicketService) *TicketHandler {
 }
 
 func (handler *TicketHandler) HandleGetAllTickets(w http.ResponseWriter, r *http.Request) error {
+
 	tickets, err := handler.service.GetAllTickets(r.Context())
 	if err != nil {
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, tickets)
+	return utils.WriteJSON(w, http.StatusOK, mapper.TicketsToResponse(tickets))
 }
 
 func (handler *TicketHandler) HandleGetTicketByID(w http.ResponseWriter, r *http.Request) error {
@@ -47,7 +48,7 @@ func (handler *TicketHandler) HandleGetTicketByID(w http.ResponseWriter, r *http
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, ticket)
+	return utils.WriteJSON(w, http.StatusOK, mapper.TicketToResponse(ticket))
 }
 
 func (handler *TicketHandler) HandleGetTicketsByUserID(w http.ResponseWriter, r *http.Request) error {
@@ -61,7 +62,7 @@ func (handler *TicketHandler) HandleGetTicketsByUserID(w http.ResponseWriter, r 
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, ticket)
+	return utils.WriteJSON(w, http.StatusOK, mapper.TicketsToResponse(ticket))
 }
 
 func (handler *TicketHandler) HandleGetTicketsByProjectionID(w http.ResponseWriter, r *http.Request) error {
@@ -70,12 +71,12 @@ func (handler *TicketHandler) HandleGetTicketsByProjectionID(w http.ResponseWrit
 		return utils.NewInvalidInput("Invalid projection id", err)
 	}
 
-	ticket, err := handler.service.GetTicketByProjectionID(r.Context(), id)
+	tickets, err := handler.service.GetTicketByProjectionID(r.Context(), id)
 	if err != nil {
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, ticket)
+	return utils.WriteJSON(w, http.StatusOK, mapper.TicketsToResponse(tickets))
 }
 
 func (handler *TicketHandler) HandleCreateTicket(w http.ResponseWriter, r *http.Request) error {
@@ -92,7 +93,7 @@ func (handler *TicketHandler) HandleCreateTicket(w http.ResponseWriter, r *http.
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusCreated, createdTicket)
+	return utils.WriteJSON(w, http.StatusCreated, mapper.TicketToResponse(createdTicket))
 }
 
 func (handler *TicketHandler) HandleDeleteTicket(w http.ResponseWriter, r *http.Request) error {

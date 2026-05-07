@@ -33,7 +33,7 @@ func (handler *ProjectionHandler) HandleGetAllProjections(w http.ResponseWriter,
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, projections)
+	return utils.WriteJSON(w, http.StatusOK, mapper.ProjectionsToResponse(projections))
 }
 
 func (handler *ProjectionHandler) HandleGetProjectionByID(w http.ResponseWriter, r *http.Request) error {
@@ -61,7 +61,7 @@ func (handler *ProjectionHandler) HandleGetProjectionsByMovieID(w http.ResponseW
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, projections)
+	return utils.WriteJSON(w, http.StatusOK, mapper.ProjectionsToResponse(projections))
 }
 
 func (handler *ProjectionHandler) HandleCreateProjection(w http.ResponseWriter, r *http.Request) error {
@@ -78,7 +78,7 @@ func (handler *ProjectionHandler) HandleCreateProjection(w http.ResponseWriter, 
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusCreated, createdProjection)
+	return utils.WriteJSON(w, http.StatusCreated, mapper.ProjectionToResponse(createdProjection))
 }
 
 func (handler *ProjectionHandler) HandleUpdateProjection(w http.ResponseWriter, r *http.Request) error {
@@ -100,7 +100,7 @@ func (handler *ProjectionHandler) HandleUpdateProjection(w http.ResponseWriter, 
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, updatedProjection)
+	return utils.WriteJSON(w, http.StatusOK, mapper.ProjectionToResponse(updatedProjection))
 }
 
 func (handler *ProjectionHandler) HandleDeleteProjection(w http.ResponseWriter, r *http.Request) error {

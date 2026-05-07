@@ -35,7 +35,7 @@ func (handler *HallHandler) HandleGetAllHalls(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, halls)
+	utils.WriteJSON(w, http.StatusOK, mapper.HallsToResponse(halls))
 	return nil
 }
 
@@ -50,7 +50,7 @@ func (handler *HallHandler) HandleGetHallByID(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, hall)
+	utils.WriteJSON(w, http.StatusOK, mapper.HallToResponse(hall))
 	return nil
 }
 
@@ -68,7 +68,7 @@ func (handler *HallHandler) HandleCreateHall(w http.ResponseWriter, r *http.Requ
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, createdHall)
+	utils.WriteJSON(w, http.StatusCreated, mapper.HallToResponse(createdHall))
 	return nil
 }
 
@@ -91,7 +91,7 @@ func (handler *HallHandler) HandleUpdateHall(w http.ResponseWriter, r *http.Requ
 		return err
 	}
 
-	utils.WriteJSON(w, http.StatusOK, updatedHall)
+	utils.WriteJSON(w, http.StatusOK, mapper.HallToResponse(updatedHall))
 	return nil
 }
 

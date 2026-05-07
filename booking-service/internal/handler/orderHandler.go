@@ -2,6 +2,7 @@ package handler
 
 import (
 	"booking-service/internal/dto"
+	"booking-service/internal/mapper"
 	"booking-service/internal/models"
 	"booking-service/internal/utils"
 	"context"
@@ -34,7 +35,7 @@ func (handler *OrderHandler) HandleGetAllOrders(w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, orders)
+	return utils.WriteJSON(w, http.StatusOK, mapper.OrdersToResponse(orders))
 }
 
 func (handler *OrderHandler) HandleGetOrderByID(w http.ResponseWriter, r *http.Request) error {
@@ -57,12 +58,12 @@ func (handler *OrderHandler) HandleGetOrdersByUserID(w http.ResponseWriter, r *h
 		return utils.NewInvalidInput("Invalid user id", err)
 	}
 
-	order, err := handler.service.GetOrderByID(r.Context(), id)
+	orders, err := handler.service.GetOrdersByUserID(r.Context(), id)
 	if err != nil {
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, order)
+	return utils.WriteJSON(w, http.StatusOK, mapper.OrdersToResponse(orders))
 }
 
 func (handler *OrderHandler) HandleGetMyOrders(w http.ResponseWriter, r *http.Request) error {
@@ -71,7 +72,7 @@ func (handler *OrderHandler) HandleGetMyOrders(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, orders)
+	return utils.WriteJSON(w, http.StatusOK, mapper.OrdersToResponse(orders))
 }
 
 func (handler *OrderHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) error {
@@ -86,10 +87,7 @@ func (handler *OrderHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	return json.NewEncoder(w).Encode(order)
+	return utils.WriteJSON(w, http.StatusOK, mapper.OrderToResponse(order))
 }
 
 func (handler *OrderHandler) HandlePayOrder(w http.ResponseWriter, r *http.Request) error {
