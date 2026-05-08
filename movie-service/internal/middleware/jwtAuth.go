@@ -3,32 +3,14 @@ package middleware
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"movie-service/internal/auth"
 	"movie-service/internal/utils"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
-
-// LOGGING MIDDLEWARE
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		next.ServeHTTP(w, r)
-
-		slog.Info(
-			"request completed",
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.Duration("duration", time.Since(start)),
-		)
-	})
-}
 
 type JwtClaims struct {
 	UserID uint   `json:"userID"`
@@ -40,13 +22,25 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		secret := os.Getenv("SECRET_KEY")
 		if secret == "" {
-			utils.NewInternal("Server configuration error", errors.New("SECRET_KEY is empty"))
+			authErr := utils.NewInternal(
+				"Server configuration error",
+				errors.New("SECRET_KEY is empty"))
+
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
 			return
 		}
 
 		tokenString, err := extractBearerToken(r)
 		if err != nil {
-			utils.NewAuthFailed("Unauthorized", err)
+			authErr := utils.NewAuthFailed("Unauthorized", err)
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
+
 			return
 		}
 
@@ -60,12 +54,24 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 			return []byte(secret), nil
 		})
 		if err != nil || token == nil || !token.Valid {
-			utils.NewAuthFailed("Invalid or expired token", err)
+			authErr := utils.NewAuthFailed("Invalid or expired token", err)
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
 			return
+
 		}
 
 		if claims.UserID == 0 {
-			utils.NewInternal("Invalid token claims", errors.New("Invalid token claims"))
+			authErr := utils.NewAuthFailed(
+				"Invalid token claims",
+				errors.New("Invalid token claims"))
+
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
 			return
 		}
 
@@ -81,17 +87,24 @@ func JwtAuthMiddleware(next http.Handler) http.Handler {
 
 func extractBearerToken(r *http.Request) (string, error) {
 	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+
 	if authHeader == "" {
 		return "", errors.New("missing Authorization header")
 	}
 
-	if strings.HasPrefix(strings.ToLower(authHeader), "bearer") {
-		authHeader = strings.TrimSpace(authHeader[7:])
+	parts := strings.Fields(authHeader)
+	if len(parts) != 2 {
+		return "", errors.New("Invalid Authorization header format")
 	}
 
-	if authHeader == "" {
+	if strings.ToLower(parts[0]) != "bearer" {
+		return "", errors.New("invalid Authorization header scheme")
+	}
+
+	token := strings.TrimSpace(parts[1])
+	if token == "" {
 		return "", errors.New("empty token")
 	}
 
-	return authHeader, nil
+	return token, nil
 }
