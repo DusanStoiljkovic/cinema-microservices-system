@@ -6,13 +6,17 @@ import (
 	"strings"
 
 	"user-service/internal/dto"
+	"user-service/internal/middleware"
 	"user-service/internal/models"
 	"user-service/internal/utils"
 )
 
 type UserRepository interface {
-	GetUserByFilter(ctx context.Context, filter *dto.UserFilter) (*models.User, error)
-	Create(ctx context.Context, user *models.User) (*models.User, error)
+	GetAll(ctx context.Context) ([]*models.User, error)
+	GetByFilter(ctx context.Context, req *dto.UserFilter) (*models.User, error)
+	Register(ctx context.Context, user *models.User) (*models.User, error)
+	Update(ctx context.Context, user *models.User) (*models.User, error)
+	Delete(ctx context.Context, id uint) error
 }
 
 type UserService struct {
@@ -23,7 +27,11 @@ func NewUserService(repo UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*models.User, error) {
+func (service *UserService) GetAllUsers(ctx context.Context) ([]*models.User, error) {
+	return service.repo.GetAll(ctx)
+}
+
+func (s *UserService) GetUserByFilter(ctx context.Context, req *dto.UserFilter) (*models.User, error) {
 	if req == nil {
 		return nil, utils.NewInvalidInput(
 			"Invalid user filter",
@@ -34,38 +42,38 @@ func (s *UserService) GetUserByFilter(ctx context.Context, req *models.User) (*m
 	filter := &dto.UserFilter{}
 
 	if req.ID != 0 {
-		filter.ID = &req.ID
+		filter.ID = req.ID
 	}
 
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name != "" {
-		filter.Name = &req.Name
+		filter.Name = req.Name
 	}
 
 	req.Email = strings.TrimSpace(req.Email)
 	if req.Email != "" {
-		filter.Email = &req.Email
+		filter.Email = req.Email
 	}
 
-	if filter.ID == nil && filter.Name == nil && filter.Email == nil {
+	if filter.ID == 0 && filter.Name == "" && filter.Email == "" {
 		return nil, utils.NewInvalidInput(
 			"At least one user filter is required",
 			errors.New("UserService.GetUserByFilter -> empty filter"),
 		)
 	}
 
-	return s.repo.GetUserByFilter(ctx, filter)
+	return s.repo.GetByFilter(ctx, filter)
 }
 
-func (s *UserService) Register(ctx context.Context, user *models.User) (*models.User, error) {
+func (service *UserService) RegisterUser(ctx context.Context, user *models.User) (*models.User, error) {
 	trimUserSpaces(user)
 
 	if err := validateRegisterUser(user); err != nil {
 		return nil, err
 	}
 
-	existingUser, err := s.repo.GetUserByFilter(ctx, &dto.UserFilter{
-		Email: &user.Email,
+	existingUser, err := service.repo.GetByFilter(ctx, &dto.UserFilter{
+		Email: user.Email,
 	})
 
 	if err != nil && !isSafeNotFound(err) {
@@ -90,18 +98,18 @@ func (s *UserService) Register(ctx context.Context, user *models.User) (*models.
 	user.Password = hashedPassword
 	user.Role = "user"
 
-	return s.repo.Create(ctx, user)
+	return service.repo.Register(ctx, user)
 }
 
-func (s *UserService) Login(ctx context.Context, user *models.User) (*models.User, error) {
+func (service *UserService) LoginUser(ctx context.Context, user *models.User) (map[string]string, error) {
 	trimUserSpaces(user)
 
 	if err := validateLoginUser(user); err != nil {
 		return nil, err
 	}
 
-	existingUser, err := s.repo.GetUserByFilter(ctx, &dto.UserFilter{
-		Email: &user.Email,
+	existingUser, err := service.repo.GetByFilter(ctx, &dto.UserFilter{
+		Email: user.Email,
 	})
 	if err != nil {
 		return nil, utils.NewAuthFailed(
@@ -117,7 +125,22 @@ func (s *UserService) Login(ctx context.Context, user *models.User) (*models.Use
 		)
 	}
 
-	return existingUser, nil
+	token, err := middleware.CreateToken(existingUser)
+	if err != nil {
+		return nil, utils.NewAuthFailed(
+			"Failed to create authentication token",
+			err,
+		)
+	}
+
+	return map[string]string{"jwt": token}, nil
+}
+
+func (service *UserService) UpdateUser(ctx context.Context, user *models.User) (*models.User, error) {
+	return service.repo.Update(ctx, user)
+}
+func (service *UserService) DeleteUser(ctx context.Context, id uint) error {
+	return service.repo.Delete(ctx, id)
 }
 
 func validateRegisterUser(user *models.User) error {

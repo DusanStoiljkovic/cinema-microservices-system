@@ -10,7 +10,7 @@ import (
 
 	"user-service/internal/auth"
 	"user-service/internal/dto"
-	"user-service/internal/middleware"
+	"user-service/internal/mapper"
 	"user-service/internal/models"
 	"user-service/internal/utils"
 
@@ -19,9 +19,12 @@ import (
 )
 
 type UserService interface {
-	GetUserByFilter(ctx context.Context, req *models.User) (*models.User, error)
-	Register(ctx context.Context, user *models.User) (*models.User, error)
-	Login(ctx context.Context, user *models.User) (*models.User, error)
+	GetAllUsers(ctx context.Context) ([]*models.User, error)
+	GetUserByFilter(ctx context.Context, filter *dto.UserFilter) (*models.User, error)
+	RegisterUser(ctx context.Context, user *models.User) (*models.User, error)
+	LoginUser(ctx context.Context, user *models.User) (map[string]string, error)
+	UpdateUser(ctx context.Context, user *models.User) (*models.User, error)
+	DeleteUser(ctx context.Context, id uint) error
 }
 
 type UserHandler struct {
@@ -36,7 +39,16 @@ func NewUserHandler(service UserService) *UserHandler {
 	}
 }
 
-func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) error {
+func (handler *UserHandler) HandleGetAllUsers(w http.ResponseWriter, r *http.Request) error {
+	users, err := handler.service.GetAllUsers(r.Context())
+	if err != nil {
+		return err
+	}
+
+	return utils.WriteJSON(w, http.StatusOK, mapper.UsersToResponse(users))
+}
+
+func (h *UserHandler) HandleGetMe(w http.ResponseWriter, r *http.Request) error {
 	userID, ok := r.Context().Value(auth.UserIDKey).(uint)
 	if !ok {
 		return utils.NewAuthFailed(
@@ -45,93 +57,56 @@ func (h *UserHandler) GetMe(w http.ResponseWriter, r *http.Request) error {
 		)
 	}
 
-	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: userID})
+	user, err := h.service.GetUserByFilter(r.Context(), &dto.UserFilter{ID: userID})
 	if err != nil {
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, dto.UserResponse{
-		Name:      user.Name,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
-	})
+	return utils.WriteJSON(w, http.StatusOK, mapper.UserToResponse(user))
 }
 
-func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) error {
+func (h *UserHandler) HandleGetUserByID(w http.ResponseWriter, r *http.Request) error {
 	userID, err := parseIDParam(r, "id")
 	if err != nil {
 		return utils.NewInvalidInput("Invalid user id", err)
 	}
 
-	user, err := h.service.GetUserByFilter(r.Context(), &models.User{ID: userID})
+	user, err := h.service.GetUserByFilter(r.Context(), &dto.UserFilter{ID: userID})
 	if err != nil {
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusOK, dto.UserResponse{
-		Name:      user.Name,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
-	})
+	return utils.WriteJSON(w, http.StatusOK, mapper.UserToResponse(user))
 }
 
-func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) error {
+func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) error {
 	req := &dto.RegisterRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
-	if err := h.validate.Struct(req); err != nil {
-		return utils.NewInvalidInput("Validation failed", err)
-	}
-
-	user, err := h.service.Register(r.Context(), &models.User{
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: req.Password,
-	})
+	user, err := h.service.RegisterUser(r.Context(), mapper.UserFromRegisterRequest(req))
 	if err != nil {
 		return err
 	}
 
-	return utils.WriteJSON(w, http.StatusCreated, dto.UserResponse{
-		Name:      user.Name,
-		Email:     user.Email,
-		CreatedAt: user.CreatedAt,
-	})
+	return utils.WriteJSON(w, http.StatusCreated, mapper.UserToResponse(user))
 }
 
-func (h *UserHandler) LoginUser(w http.ResponseWriter, r *http.Request) error {
+func (h *UserHandler) HandleLoginUser(w http.ResponseWriter, r *http.Request) error {
 	req := &dto.LoginRequest{}
 
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		return utils.NewInvalidInput("Invalid request body", err)
 	}
 
-	if err := h.validate.Struct(req); err != nil {
-		return utils.NewInvalidInput("Validation failed", err)
-	}
-
-	user, err := h.service.Login(r.Context(), &models.User{
-		Email:    req.Email,
-		Password: req.Password,
-	})
+	token, err := h.service.LoginUser(r.Context(), mapper.UserFromLoginRequest(req))
 	if err != nil {
 		return err
 	}
 
-	token, err := middleware.CreateToken(user)
-	if err != nil {
-		return utils.NewAuthFailed(
-			"Failed to create authentication token",
-			err,
-		)
-	}
-
-	return utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"jwt": token,
-	})
+	return utils.WriteJSON(w, http.StatusOK, token)
 }
 
 func parseIDParam(r *http.Request, param string) (uint, error) {
@@ -147,4 +122,34 @@ func parseIDParam(r *http.Request, param string) (uint, error) {
 	}
 
 	return uint(id), nil
+}
+
+func (handler *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) error {
+	req := &models.User{}
+
+	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+		return utils.NewInvalidInput("Invalid body input", err)
+	}
+
+	updatedUser, err := handler.service.UpdateUser(r.Context(), req)
+	if err != nil {
+		return err
+	}
+
+	utils.WriteJSON(w, http.StatusOK, mapper.UserToResponse(updatedUser))
+	return nil
+}
+
+func (handler *UserHandler) HandleDeleteUser(w http.ResponseWriter, r *http.Request) error {
+	userID, err := parseIDParam(r, "id")
+	if err != nil {
+		return err
+	}
+
+	if err := handler.service.DeleteUser(r.Context(), userID); err != nil {
+		return err
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
