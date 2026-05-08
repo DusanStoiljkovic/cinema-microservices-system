@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"api-gateway/internal/auth"
 	"api-gateway/internal/utils"
 	"context"
 	"errors"
@@ -42,81 +43,99 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// JWT TOKEN LOGIC
+type JwtClaims struct {
+	UserID uint   `json:"userID"`
+	Role   string `json:"role,omitempty"`
+	jwt.RegisteredClaims
+}
+
 func JwtAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		secret := os.Getenv("SECRET_KEY")
 		if secret == "" {
-			utils.NewInternal(
+			authErr := utils.NewInternal(
 				"Server configuration error",
-				errors.New("JwtAuthMiddleware -> SECRET_KEY is empty"),
-			)
+				errors.New("SECRET_KEY is empty"))
+
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
 			return
 		}
 
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			utils.NewAuthFailed(
-				"Unauthorized",
-				errors.New("JwtAuthMiddleware -> missing Authorization header"),
-			)
+		tokenString, err := extractBearerToken(r)
+		if err != nil {
+			authErr := utils.NewAuthFailed("Unauthorized", err)
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
+
 			return
 		}
 
-		tokenString := strings.TrimSpace(authHeader)
-
-		if strings.HasPrefix(strings.ToLower(tokenString), "bearer ") {
-			tokenString = strings.TrimSpace(tokenString[7:])
-		}
-
-		if tokenString == "" {
-			utils.NewAuthFailed(
-				"Unauthorized",
-				errors.New("JwtAuthMiddleware -> empty token"),
-			)
-			return
-		}
-
-		claims := jwt.MapClaims{}
+		claims := &JwtClaims{}
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			if token.Method != jwt.SigningMethodHS256 {
 				return nil, errors.New("unexpected signing method")
 			}
 
 			return []byte(secret), nil
 		})
-
 		if err != nil || token == nil || !token.Valid {
-			utils.NewAuthFailed(
-				"Invalid or expired token",
-				err,
-			)
+			authErr := utils.NewAuthFailed("Invalid or expired token", err)
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
 			return
+
 		}
 
-		email, ok := claims["email"].(string)
-		if !ok || email == "" {
-			utils.NewAuthFailed(
+		if claims.UserID == 0 {
+			authErr := utils.NewAuthFailed(
 				"Invalid token claims",
-				errors.New("JwtAuthMiddleware -> email claim missing"),
-			)
+				errors.New("Invalid token claims"))
+
+			utils.WriteJSON(w, authErr.Status, map[string]string{
+				"error": authErr.UserMsg,
+				"code":  authErr.Code,
+			})
 			return
 		}
 
-		userID, ok := claims[string(UserIDKey)].(uint)
-		if !ok || userID <= 0 {
-			utils.NewAuthFailed(
-				"Invalid token claims",
-				errors.New("JwtAuthMiddleware -> userID claim missing"),
-			)
-			return
-		}
+		ctx := context.WithValue(r.Context(), auth.UserIDKey, claims.UserID)
 
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, EmailKey, email)
-		ctx = context.WithValue(ctx, UserIDKey, uint(userID))
+		if claims.Role != "" {
+			ctx = context.WithValue(ctx, auth.RoleKey, claims.Role)
+		}
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func extractBearerToken(r *http.Request) (string, error) {
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+
+	if authHeader == "" {
+		return "", errors.New("missing Authorization header")
+	}
+
+	parts := strings.Fields(authHeader)
+	if len(parts) != 2 {
+		return "", errors.New("Invalid Authorization header format")
+	}
+
+	if strings.ToLower(parts[0]) != "bearer" {
+		return "", errors.New("invalid Authorization header scheme")
+	}
+
+	token := strings.TrimSpace(parts[1])
+	if token == "" {
+		return "", errors.New("empty token")
+	}
+
+	return token, nil
 }
