@@ -91,6 +91,7 @@ func (repo *OrderRepository) Create(ctx context.Context, order *models.Order) (*
 			return utils.NewConflict("There are no enough seats.", errors.New("OrderRepository.Create -> not enough seats for this projection"))
 		}
 
+		// Racuna TotalPrice
 		var totalPrice uint = 0
 
 		for i := range order.Tickets {
@@ -109,21 +110,26 @@ func (repo *OrderRepository) Create(ctx context.Context, order *models.Order) (*
 
 		order.TotalPrice = totalPrice
 
+		// Kreiranje
 		tickets := order.Tickets
 		order.Tickets = nil
 
+		// Pravimo prvo Order(kako bi u ticket mogli da ubacimo order_id)
 		if err := tx.Create(order).Error; err != nil {
 			return err
 		}
 
+		// Dodeljujemo im order_id
 		for i := range tickets {
 			tickets[i].OrderID = order.ID
 		}
 
+		// Ovde radimo Batch Insert
 		if err := tx.Create(&tickets).Error; err != nil {
 			return err
 		}
 
+		// Dodeljujemo tikete orderu
 		order.Tickets = tickets
 
 		return nil
@@ -169,15 +175,23 @@ func (repo *OrderRepository) Cancel(ctx context.Context, id uint) error {
 
 }
 func (repo *OrderRepository) Delete(ctx context.Context, id uint) error {
+
 	order, err := repo.GetByID(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	err = repo.db.WithContext(ctx).Delete(order, id).Error
-	if err != nil {
-		return utils.NewConflict("Failed to delete", err)
-	}
+	err = repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err = tx.Where("order_id = ?", order.ID).Delete(&order.Tickets).Error; err != nil {
+			return err
+		}
+
+		if err = tx.Delete(&order, order.ID).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	return nil
 }
