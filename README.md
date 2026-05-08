@@ -4,13 +4,7 @@ Cinema Microservices System is a backend project built with Go using a microserv
 
 The system is designed for managing users, movies, genres, halls, projections, tickets, and cinema bookings through multiple independent services connected through an API Gateway.
 
-This README is aligned with the current Postman collection for the project.
-
 ---
-
-## Diagram 
-<img width="1518" height="1036" alt="dbDiagram" src="https://github.com/user-attachments/assets/cf5c6eff-8835-48b9-a26b-3428c8b7a0c4" />
-
 
 ## Architecture
 
@@ -19,10 +13,9 @@ The system is divided into several services:
 | Service | Responsibility |
 |---|---|
 | API Gateway | Single entry point for client requests |
-| User Service | User registration, login, authentication, and user profile |
+| User Service | User registration, login, authentication, user profile and user administration |
 | Movie Service | Movies, genres, and movie-genre relations |
-| Booking Service | Halls, projections, tickets, seats, and orders |
-| Recommendation Service | Movie recommendation endpoints - currently in progress |
+| Booking Service | Halls, projections, tickets, and orders |
 
 Each service has its own internal structure with handlers, services, repositories, DTOs, models, and utilities.
 
@@ -44,7 +37,7 @@ Each service has its own internal structure with handlers, services, repositorie
 
 ## Project Structure
 
-```txt
+```text
 cinema-microservices-system/
 │
 ├── api-gateway/
@@ -53,8 +46,10 @@ cinema-microservices-system/
 ├── user-service/
 │   ├── cmd/
 │   └── internal/
+│       ├── auth/
 │       ├── dto/
 │       ├── handlers/
+│       ├── mapper/
 │       ├── middleware/
 │       ├── models/
 │       ├── repository/
@@ -68,6 +63,7 @@ cinema-microservices-system/
 │       ├── dto/
 │       ├── handler/
 │       ├── mapper/
+│       ├── middleware/
 │       ├── models/
 │       ├── repository/
 │       ├── routes/
@@ -77,6 +73,7 @@ cinema-microservices-system/
 ├── booking-service/
 │   ├── cmd/
 │   └── internal/
+│       ├── auth/
 │       ├── dto/
 │       ├── handler/
 │       ├── mapper/
@@ -86,9 +83,6 @@ cinema-microservices-system/
 │       ├── routes/
 │       ├── service/
 │       └── utils/
-│
-├── recommendation-service/
-│   └── cmd/
 │
 ├── docker-compose.yaml
 └── README.md
@@ -124,12 +118,11 @@ Each service should have its own `.env` file.
 
 Example files should be used as templates:
 
-```txt
+```text
 api-gateway.env.example
 user-service.env.example
 movie-service.env.example
 booking-service.env.example
-recommendation-service.env.example
 ```
 
 Do not commit real `.env` files with secrets to GitHub.
@@ -142,13 +135,13 @@ All requests should go through the API Gateway.
 
 Base URL:
 
-```txt
+```text
 http://localhost:8080
 ```
 
-Main route groups:
+Main API route groups:
 
-```txt
+```text
 /api/users
 /api/movies
 /api/genres
@@ -156,35 +149,69 @@ Main route groups:
 /api/projections
 /api/tickets
 /api/orders
-/api/recommendations
 ```
 
----
+The API Gateway removes the `/api` prefix before forwarding requests to the correct service.
 
-## API Status Legend
+Example:
 
-| Status | Meaning |
-|---|---|
-| Completed | Request has a defined URL in the Postman collection |
-| In progress | Request exists in Postman, but the URL is missing or empty |
+```text
+GET /api/movies
+```
+
+is forwarded internally to:
+
+```text
+GET /movies
+```
 
 ---
 
 # API Routes
 
-## User Service
+## Authentication
 
-| Method | Endpoint | Description | Status |
+Some routes require JWT authentication.
+
+Login returns a JWT token:
+
+```json
+{
+  "jwt": "your.jwt.token"
+}
+```
+
+Use the token in protected routes:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+---
+
+# User Service
+
+Base path:
+
+```text
+/api/users
+```
+
+## User Routes
+
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| GET | TBD | Get all users | In progress |
-| GET | `/api/users/{user_id}` | Get user by ID | Completed |
-| GET | `/api/users/me` | Get current authenticated user | Completed |
-| POST | `/api/users/register` | Register new user | Completed |
-| POST | `/api/users/login` | Login user | Completed |
-| PUT | TBD | Update user | In progress |
-| DELETE | TBD | Delete user | In progress |
+| POST | `/api/users/register` | Register new user | Public |
+| POST | `/api/users/login` | Login user | Public |
+| GET | `/api/users/me` | Get current authenticated user | JWT |
+| GET | `/api/users/{id}` | Get user by ID | JWT |
+| PUT | `/api/users` | Update user | JWT |
+| GET | `/api/users` | Get all users | JWT + Admin |
+| DELETE | `/api/users/{id}` | Delete user by ID | JWT + Admin |
 
-### Register User
+---
+
+## Register User
 
 ```http
 POST /api/users/register
@@ -194,13 +221,15 @@ Request body:
 
 ```json
 {
-  "Name": "Dusan Stoiljkovic",
-  "Email": "dusan@gmail.com",
-  "Password": "dusan123"
+  "name": "Dusan Stoiljkovic",
+  "email": "dusan@gmail.com",
+  "password": "dusan123"
 }
 ```
 
-### Login User
+---
+
+## Login User
 
 ```http
 POST /api/users/login
@@ -210,8 +239,8 @@ Request body:
 
 ```json
 {
-  "Email": "dusan@gmail.com",
-  "Password": "dusan123"
+  "email": "dusan@gmail.com",
+  "password": "dusan123"
 }
 ```
 
@@ -223,7 +252,9 @@ Expected response:
 }
 ```
 
-### Get Current User
+---
+
+## Get Current User
 
 ```http
 GET /api/users/me
@@ -231,14 +262,16 @@ GET /api/users/me
 
 Headers:
 
-```http
-Authorization: your.jwt.token
+```text
+Authorization: Bearer your.jwt.token
 ```
 
-### Get User By ID
+---
+
+## Get User By ID
 
 ```http
-GET /api/users/{user_id}
+GET /api/users/{id}
 ```
 
 Example:
@@ -249,45 +282,145 @@ GET /api/users/1
 
 Headers:
 
-```http
-Authorization: your.jwt.token
+```text
+Authorization: Bearer your.jwt.token
 ```
-
-### User Service - In Progress
-
-These requests exist in Postman but do not currently have defined URLs:
-
-| Method | Request Name | Status |
-|---|---|---|
-| GET | Get All Users | In progress |
-| PUT | Update User | In progress |
-| DELETE | Delete User | In progress |
 
 ---
 
-## Movie Service
+## Get All Users
 
-## Movies
+```http
+GET /api/users
+```
 
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | TBD | Search movies | In progress |
-| GET | `/api/movies` | Get all movies | Completed |
-| GET | `/api/movies/{id}` | Get movie by ID | Completed |
-| GET | TBD | Get movies by genre | In progress |
-| POST | `/api/movies` | Create movie | Completed |
-| PUT | `/api/movies/{id}` | Update movie by ID | Completed |
-| DELETE | `/api/{id}` | Delete movie by ID | Completed |
+Headers:
 
-> Note: The Postman collection currently defines `Delete Movie By Id` as `DELETE /api/3`. Verify whether the intended endpoint should be `DELETE /api/movies/{id}`.
+```text
+Authorization: Bearer admin.jwt.token
+```
 
-### Get All Movies
+Required role:
+
+```text
+admin
+```
+
+---
+
+## Update User
+
+```http
+PUT /api/users
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+Request body example:
+
+```json
+{
+  "id": 1,
+  "name": "Dusan Stoiljkovic",
+  "email": "dusan@gmail.com",
+  "password": "newpassword123",
+  "role": "user"
+}
+```
+
+> Note: The current route is `PUT /api/users`, not `PUT /api/users/{id}`.
+
+---
+
+## Delete User
+
+```http
+DELETE /api/users/{id}
+```
+
+Example:
+
+```http
+DELETE /api/users/1
+```
+
+Headers:
+
+```text
+Authorization: Bearer admin.jwt.token
+```
+
+Required role:
+
+```text
+admin
+```
+
+---
+
+# Movie Service
+
+Base paths:
+
+```text
+/api/movies
+/api/genres
+```
+
+---
+
+## Movie Routes
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/movies` | Get all movies / search movies |
+| GET | `/api/movies/{id}` | Get movie by ID |
+| GET | `/api/movies/{id}/genres` | Get genres for movie |
+| POST | `/api/movies` | Create movie |
+| POST | `/api/movies/{movie_id}/genres/{genre_id}` | Add genre to movie |
+| PUT | `/api/movies/{id}` | Update movie |
+| DELETE | `/api/movies/{id}` | Delete movie |
+| DELETE | `/api/movies/{movie_id}/genres/{genre_id}` | Remove genre from movie |
+
+---
+
+## Get All Movies
 
 ```http
 GET /api/movies
 ```
 
-### Get Movie By ID
+Optional query params:
+
+| Query Param | Example | Description |
+|---|---|---|
+| `limit` | `20` | Number of movies to return |
+| `offset` | `0` | Pagination offset |
+| `sort` | `asc` / `desc` | Sort order |
+| `genre` | `action` | Filter by genre name |
+| `min_year` | `2020` | Minimum movie year |
+| `max_year` | `2030` | Maximum movie year |
+| `min_rating` | `7.0` | Minimum rating |
+
+Example:
+
+```http
+GET /api/movies?genre=action&min_year=2020&max_year=2030
+```
+
+Another example:
+
+```http
+GET /api/movies?limit=10&offset=0&sort=desc&min_rating=7.5
+```
+
+---
+
+## Get Movie By ID
 
 ```http
 GET /api/movies/{id}
@@ -299,7 +432,23 @@ Example:
 GET /api/movies/1
 ```
 
-### Create Movie
+---
+
+## Get Movie Genres
+
+```http
+GET /api/movies/{id}/genres
+```
+
+Example:
+
+```http
+GET /api/movies/1/genres
+```
+
+---
+
+## Create Movie
 
 ```http
 POST /api/movies
@@ -314,11 +463,14 @@ Request body:
   "year": 2002,
   "image_url": "https://example.com/inception.jpg",
   "duration": 180,
+  "rating": 7.0,
   "genre_ids": [1, 2, 6]
 }
 ```
 
-### Update Movie By ID
+---
+
+## Update Movie
 
 ```http
 PUT /api/movies/{id}
@@ -339,99 +491,28 @@ Request body:
   "year": 2002,
   "image_url": "https://example.com/inception.jpg",
   "duration": 200,
-  "rating": 7.0,
+  "rating": 8.0,
   "genre_ids": [1, 2]
 }
 ```
 
-### Delete Movie By ID
-
-```http
-DELETE /api/{id}
-```
-
-Example from Postman:
-
-```http
-DELETE /api/3
-```
-
-### Movies - In Progress
-
-These requests exist in Postman but do not currently have defined URLs:
-
-| Method | Request Name | Status |
-|---|---|---|
-| GET | Search Movies | In progress |
-| GET | Get Movies By Genre | In progress |
-
 ---
 
-## Genres
-
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | `/api/genres` | Get all genres | Completed |
-| POST | `/api/genres` | Create genre | Completed |
-| DELETE | `/api/movies/genres/{genre_id}` | Delete genre by ID | Completed |
-
-> Note: The Postman collection currently defines `Delete Genre By Id` as `DELETE /api/movies/genres/2`. Verify whether the intended endpoint should be `DELETE /api/genres/{id}`.
-
-### Get All Genres
+## Delete Movie
 
 ```http
-GET /api/genres
-```
-
-### Create Genre
-
-```http
-POST /api/genres
-```
-
-Request body:
-
-```json
-{
-  "name": "romance"
-}
-```
-
-### Delete Genre By ID
-
-```http
-DELETE /api/movies/genres/{genre_id}
-```
-
-Example from Postman:
-
-```http
-DELETE /api/movies/genres/2
-```
-
----
-
-## Movie-Genre Relations
-
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | `/api/movies/{movie_id}/genres` | Get genres by movie ID | Completed |
-| POST | `/api/movies/{movie_id}/genres/{genre_id}` | Create movie-genre relation | Completed |
-| DELETE | `/api/movies/{movie_id}/genres/{genre_id}` | Delete movie-genre relation | Completed |
-
-### Get Relation By Movie ID
-
-```http
-GET /api/movies/{movie_id}/genres
+DELETE /api/movies/{id}
 ```
 
 Example:
 
 ```http
-GET /api/movies/1/genres
+DELETE /api/movies/3
 ```
 
-### Create Relation
+---
+
+## Add Genre To Movie
 
 ```http
 POST /api/movies/{movie_id}/genres/{genre_id}
@@ -443,7 +524,9 @@ Example:
 POST /api/movies/1/genres/3
 ```
 
-### Delete Relation
+---
+
+## Remove Genre From Movie
 
 ```http
 DELETE /api/movies/{movie_id}/genres/{genre_id}
@@ -457,29 +540,141 @@ DELETE /api/movies/1/genres/2
 
 ---
 
-## Booking Service
+# Genres
 
-## Halls
+Base path:
 
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | `/api/halls` | Get all halls | Completed |
-| GET | TBD | Get projections by hall | In progress |
-| GET | `/api/halls/{hall_id}` | Get hall by ID | Completed |
-| POST | `/api/halls` | Create hall | Completed |
-| PUT | `/api/halls/{hall_id}` | Update hall | Completed |
-| DELETE | `/api/halls/{hall_id}` | Delete hall | Completed |
+```text
+/api/genres
+```
 
-### Get All Halls
+## Genre Routes
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/genres` | Get all genres |
+| GET | `/api/genres/{id}` | Get genre by filter |
+| POST | `/api/genres` | Create genre |
+| PUT | `/api/genres/{id}` | Update genre |
+| DELETE | `/api/genres/{id}` | Delete genre |
+
+---
+
+## Get All Genres
+
+```http
+GET /api/genres
+```
+
+---
+
+## Get Genre By Filter
+
+```http
+GET /api/genres/{id}
+```
+
+Example:
+
+```http
+GET /api/genres/1
+```
+
+> Note: The route exists as `/api/genres/{id}`, but the current handler reads a `GenreFilter` from the request body. If you want a classic `GET /api/genres/{id}`, the handler should be adjusted to use the URL param.
+
+---
+
+## Create Genre
+
+```http
+POST /api/genres
+```
+
+Request body:
+
+```json
+{
+  "name": "romance"
+}
+```
+
+---
+
+## Update Genre
+
+```http
+PUT /api/genres/{id}
+```
+
+Example:
+
+```http
+PUT /api/genres/1
+```
+
+Request body:
+
+```json
+{
+  "name": "drama"
+}
+```
+
+---
+
+## Delete Genre
+
+```http
+DELETE /api/genres/{id}
+```
+
+Example:
+
+```http
+DELETE /api/genres/2
+```
+
+---
+
+# Booking Service
+
+Base paths:
+
+```text
+/api/halls
+/api/projections
+/api/tickets
+/api/orders
+```
+
+---
+
+# Halls
+
+## Hall Routes
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/halls` | Get all halls |
+| GET | `/api/halls/{id}` | Get hall by ID |
+| POST | `/api/halls` | Create hall |
+| PUT | `/api/halls/{id}` | Update hall |
+| DELETE | `/api/halls/{id}` | Delete hall |
+
+---
+
+## Get All Halls
 
 ```http
 GET /api/halls
 ```
 
-### Get Hall By ID
+---
+
+## Get Hall By ID
 
 ```http
-GET /api/halls/{hall_id}
+GET /api/halls/{id}
 ```
 
 Example:
@@ -488,7 +683,9 @@ Example:
 GET /api/halls/4
 ```
 
-### Create Hall
+---
+
+## Create Hall
 
 ```http
 POST /api/halls
@@ -504,10 +701,12 @@ Request body:
 }
 ```
 
-### Update Hall
+---
+
+## Update Hall
 
 ```http
-PUT /api/halls/{hall_id}
+PUT /api/halls/{id}
 ```
 
 Example:
@@ -526,10 +725,12 @@ Request body:
 }
 ```
 
-### Delete Hall
+---
+
+## Delete Hall
 
 ```http
-DELETE /api/halls/{hall_id}
+DELETE /api/halls/{id}
 ```
 
 Example:
@@ -538,38 +739,35 @@ Example:
 DELETE /api/halls/1
 ```
 
-### Halls - In Progress
+---
 
-These requests exist in Postman but do not currently have defined URLs:
+# Projections
 
-| Method | Request Name | Status |
+## Projection Routes
+
+| Method | Endpoint | Description |
 |---|---|---|
-| GET | Get Projections By Hall | In progress |
+| GET | `/api/projections` | Get all projections |
+| GET | `/api/projections/{id}` | Get projection by ID |
+| GET | `/api/projections/movie/{movie_id}` | Get projections by movie ID |
+| POST | `/api/projections` | Create projection |
+| PUT | `/api/projections/{id}` | Update projection |
+| DELETE | `/api/projections/{id}` | Delete projection |
 
 ---
 
-## Projections
-
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | `/api/projections` | Get all projections | Completed |
-| GET | `/api/projections/{projection_id}` | Get projection by ID | Completed |
-| GET | `/api/projections/movie/{movie_id}` | Get projections by movie ID | Completed |
-| GET | TBD | Get projections by hall ID | In progress |
-| POST | `/api/projections` | Create projection | Completed |
-| PUT | `/api/projections/{projection_id}` | Update projection | Completed |
-| DELETE | `/api/projections/{projection_id}` | Delete projection | Completed |
-
-### Get All Projections
+## Get All Projections
 
 ```http
 GET /api/projections
 ```
 
-### Get Projection By ID
+---
+
+## Get Projection By ID
 
 ```http
-GET /api/projections/{projection_id}
+GET /api/projections/{id}
 ```
 
 Example:
@@ -578,7 +776,9 @@ Example:
 GET /api/projections/1
 ```
 
-### Get Projections By Movie ID
+---
+
+## Get Projections By Movie ID
 
 ```http
 GET /api/projections/movie/{movie_id}
@@ -590,7 +790,9 @@ Example:
 GET /api/projections/movie/1
 ```
 
-### Create Projection
+---
+
+## Create Projection
 
 ```http
 POST /api/projections
@@ -608,10 +810,12 @@ Request body:
 }
 ```
 
-### Update Projection
+---
+
+## Update Projection
 
 ```http
-PUT /api/projections/{projection_id}
+PUT /api/projections/{id}
 ```
 
 Example:
@@ -632,10 +836,12 @@ Request body:
 }
 ```
 
-### Delete Projection
+---
+
+## Delete Projection
 
 ```http
-DELETE /api/projections/{projection_id}
+DELETE /api/projections/{id}
 ```
 
 Example:
@@ -644,39 +850,35 @@ Example:
 DELETE /api/projections/3
 ```
 
-### Projections - In Progress
+---
 
-These requests exist in Postman but do not currently have defined URLs:
+# Tickets
 
-| Method | Request Name | Status |
+## Ticket Routes
+
+| Method | Endpoint | Description |
 |---|---|---|
-| GET | Get Projections By HallID | In progress |
+| GET | `/api/tickets` | Get all tickets |
+| GET | `/api/tickets/{id}` | Get ticket by ID |
+| GET | `/api/tickets/users/{id}` | Get tickets by user ID |
+| GET | `/api/tickets/projections/{id}` | Get tickets by projection ID |
+| POST | `/api/tickets` | Create ticket |
+| DELETE | `/api/tickets/{id}` | Delete ticket |
 
 ---
 
-## Tickets
-
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | `/api/tickets` | Get all tickets | Completed |
-| GET | `/api/tickets/{ticket_id}` | Get ticket by ID | Completed |
-| GET | `/api/tickets/users/{user_id}` | Get tickets by user ID | Completed |
-| GET | `/api/tickets/projections/{projection_id}` | Get tickets by projection ID | Completed |
-| GET | TBD | Get all tickets by order ID | In progress |
-| POST | `/api/tickets` | Create ticket | Completed |
-| PATCH | TBD | Cancel ticket | In progress |
-| DELETE | TBD | Delete ticket | In progress |
-
-### Get All Tickets
+## Get All Tickets
 
 ```http
 GET /api/tickets
 ```
 
-### Get Ticket By ID
+---
+
+## Get Ticket By ID
 
 ```http
-GET /api/tickets/{ticket_id}
+GET /api/tickets/{id}
 ```
 
 Example:
@@ -685,10 +887,12 @@ Example:
 GET /api/tickets/1
 ```
 
-### Get Tickets By User ID
+---
+
+## Get Tickets By User ID
 
 ```http
-GET /api/tickets/users/{user_id}
+GET /api/tickets/users/{id}
 ```
 
 Example:
@@ -697,10 +901,12 @@ Example:
 GET /api/tickets/users/1
 ```
 
-### Get Tickets By Projection ID
+---
+
+## Get Tickets By Projection ID
 
 ```http
-GET /api/tickets/projections/{projection_id}
+GET /api/tickets/projections/{id}
 ```
 
 Example:
@@ -709,7 +915,9 @@ Example:
 GET /api/tickets/projections/1
 ```
 
-### Create Ticket
+---
+
+## Create Ticket
 
 ```http
 POST /api/tickets
@@ -719,97 +927,218 @@ Request body:
 
 ```json
 {
-  "order_id": 1,
   "projection_id": 1,
   "seat_number": 1
 }
 ```
 
-### Tickets - In Progress
+---
 
-These requests exist in Postman but do not currently have defined URLs:
+## Delete Ticket
 
-| Method | Request Name | Status |
-|---|---|---|
-| GET | Get All Tickets By OrderID | In progress |
-| PATCH | Cancel Ticket | In progress |
-| DELETE | Delete Ticket | In progress |
+```http
+DELETE /api/tickets/{id}
+```
+
+Example:
+
+```http
+DELETE /api/tickets/1
+```
 
 ---
 
-## Seats
+# Orders
 
-| Method | Endpoint | Description | Status |
+Base path:
+
+```text
+/api/orders
+```
+
+All order routes require JWT authentication.
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+## Order Routes
+
+| Method | Endpoint | Description | Auth |
 |---|---|---|---|
-| GET | TBD | Get reserved seats by projection ID | In progress |
-| GET | TBD | Get paid seats by projection ID | In progress |
-
-These requests exist in Postman but do not currently have defined URLs.
-
----
-
-## Orders
-
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | TBD | Get all orders | In progress |
-| GET | TBD | Get order by ID | In progress |
-| GET | TBD | Get orders by user ID | In progress |
-| GET | TBD | Get my orders | In progress |
-| POST | TBD | Create order | In progress |
-| PATCH | TBD | Pay order | In progress |
-| PATCH | TBD | Cancel order | In progress |
-| DELETE | TBD | Delete order | In progress |
-
-These requests exist in Postman but do not currently have defined URLs.
+| GET | `/api/orders` | Get all orders | JWT |
+| GET | `/api/orders/{id}` | Get order by ID | JWT |
+| GET | `/api/orders/users/{id}` | Get orders by user ID | JWT |
+| GET | `/api/orders/me` | Get current user's orders | JWT |
+| POST | `/api/orders` | Create order | JWT |
+| PATCH | `/api/orders/pay/{id}` | Pay order | JWT |
+| PATCH | `/api/orders/cancel/{id}` | Cancel order | JWT |
+| DELETE | `/api/orders/{id}` | Delete order | JWT |
 
 ---
 
-## Recommendation Service
+## Get All Orders
 
-| Method | Endpoint | Description | Status |
-|---|---|---|---|
-| GET | TBD | Get recommendations by user ID | In progress |
-| GET | TBD | Get my recommendations | In progress |
-| GET | TBD | Get similar movies | In progress |
+```http
+GET /api/orders
+```
 
-These requests exist in Postman but do not currently have defined URLs.
+Headers:
 
----
-
-## In Progress Endpoints Summary
-
-The following HTTP requests are not fully defined in the current Postman collection because their URL is missing or empty:
-
-| Service | Method | Request Name | Status |
-|---|---|---|---|
-| User Service | GET | Get All Users | In progress |
-| User Service | PUT | Update User | In progress |
-| User Service | DELETE | Delete User | In progress |
-| Movie Service / Movies | GET | Search Movies | In progress |
-| Movie Service / Movies | GET | Get Movies By Genre | In progress |
-| Booking Service / Halls | GET | Get Projections By Hall | In progress |
-| Booking Service / Projections | GET | Get Projections By HallID | In progress |
-| Booking Service / Tickets | GET | Get All Tickets By OrderID | In progress |
-| Booking Service / Tickets | PATCH | Cancel Ticket | In progress |
-| Booking Service / Tickets | DELETE | Delete Ticket | In progress |
-| Booking Service / Seats | GET | Get Reserved Seats By ProjectionID | In progress |
-| Booking Service / Seats | GET | Get Paid Seats By ProjectionID | In progress |
-| Booking Service / Orders | GET | Get All Orders | In progress |
-| Booking Service / Orders | GET | Get Order By ID | In progress |
-| Booking Service / Orders | GET | Get Orders By UserID | In progress |
-| Booking Service / Orders | GET | Get My Orders | In progress |
-| Booking Service / Orders | POST | Create Order | In progress |
-| Booking Service / Orders | PATCH | Pay Order | In progress |
-| Booking Service / Orders | PATCH | Cancel Order | In progress |
-| Booking Service / Orders | DELETE | Delete Order | In progress |
-| Recommendation Service | GET | Get Recommendations By UserID | In progress |
-| Recommendation Service | GET | Get My Recommendations | In progress |
-| Recommendation Service | GET | Get Similar Movies | In progress |
+```text
+Authorization: Bearer your.jwt.token
+```
 
 ---
 
-## Error Response Format
+## Get Order By ID
+
+```http
+GET /api/orders/{id}
+```
+
+Example:
+
+```http
+GET /api/orders/5
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+---
+
+## Get Orders By User ID
+
+```http
+GET /api/orders/users/{id}
+```
+
+Example:
+
+```http
+GET /api/orders/users/1
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+---
+
+## Get My Orders
+
+```http
+GET /api/orders/me
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+---
+
+## Create Order
+
+```http
+POST /api/orders
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+Request body:
+
+```json
+{
+  "tickets": [
+    {
+      "projection_id": 1,
+      "seat_number": 1
+    },
+    {
+      "projection_id": 1,
+      "seat_number": 2
+    }
+  ]
+}
+```
+
+---
+
+## Pay Order
+
+```http
+PATCH /api/orders/pay/{id}
+```
+
+Example:
+
+```http
+PATCH /api/orders/pay/5
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+---
+
+## Cancel Order
+
+```http
+PATCH /api/orders/cancel/{id}
+```
+
+Example:
+
+```http
+PATCH /api/orders/cancel/5
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+---
+
+## Delete Order
+
+```http
+DELETE /api/orders/{id}
+```
+
+Example:
+
+```http
+DELETE /api/orders/5
+```
+
+Headers:
+
+```text
+Authorization: Bearer your.jwt.token
+```
+
+---
+
+# Error Response Format
 
 The application uses a centralized SafeError-style error handler.
 
@@ -828,75 +1157,39 @@ Common error codes:
 |---|---:|---|
 | `INVALID_INPUT` | 400 | Invalid request body, params, or validation |
 | `AUTH_FAILED` | 401 | Authentication failed |
+| `FORBIDDEN` | 403 | User does not have permission |
 | `NOT_FOUND` | 404 | Resource not found |
 | `CONFLICT` | 409 | Resource conflict |
 | `INTERNAL_ERROR` | 500 | Internal server error |
 
 ---
 
-## Authentication
-
-Some routes require JWT authentication.
-
-Login returns a JWT token:
-
-```json
-{
-  "jwt": "your.jwt.token"
-}
-```
-
-Use the token in protected routes:
-
-```http
-Authorization: Bearer your.jwt.token
-```
-
-Do not commit real JWT tokens, passwords, or `.env` files to GitHub.
-
----
-
-## Development Notes
-
-Run Go formatting in each service:
-
-```bash
-gofmt -w .
-```
-
-Run a specific service locally:
-
-```bash
-go run ./cmd
-```
-
-Build Docker images:
-
-```bash
-docker compose build
-```
-
-Start all services:
-
-```bash
-docker compose up
-```
-
----
-
-## Current Features
+# Current Features
 
 - User registration
 - User login
 - JWT authentication
+- Role-based admin protection for selected user routes
 - Get current user
 - Get user by ID
+- Get all users as admin
+- Update user
+- Delete user as admin
 - Movie CRUD
-- Genre management
+- Movie search and filtering through query params
+- Genre CRUD
 - Movie-genre relations
 - Hall CRUD
 - Projection CRUD
-- Ticket creation and ticket queries
+- Ticket creation, ticket queries, and ticket deletion
+- Order creation
+- Get all orders
+- Get order by ID
+- Get orders by user ID
+- Get current user's orders
+- Pay order
+- Cancel order
+- Delete order
 - API Gateway routing
 - MySQL databases
 - Docker Compose setup
@@ -904,12 +1197,73 @@ docker compose up
 
 ---
 
-## Future Improvements
+# Implementation Notes
 
-- Finish all endpoints marked as `In progress`
-- Complete orders flow
-- Complete seat availability endpoints
-- Complete recommendation-service endpoints
+## User Update Route
+
+The current user update route is:
+
+```http
+PUT /api/users
+```
+
+It is not currently:
+
+```http
+PUT /api/users/{id}
+```
+
+If you want a more REST-style endpoint, change the route to:
+
+```go
+r.Put("/{id}", middleware.ErrorHandler(userHandler.HandleUpdateUser))
+```
+
+and then read the user ID from the URL param inside the handler.
+
+---
+
+## Genre By ID Route
+
+The current route exists as:
+
+```http
+GET /api/genres/{id}
+```
+
+However, the current handler reads a `GenreFilter` from the request body instead of using the `{id}` URL param.
+
+A cleaner implementation would be to parse the `id` from the URL param and call the service with:
+
+```go
+&dto.GenreFilter{ID: &id}
+```
+
+---
+
+## API Gateway Booking Prefix
+
+The API Gateway currently contains a `/api/bookings` proxy prefix, but the booking service does not currently define a `/bookings` route group.
+
+The active booking-related route groups are:
+
+```text
+/api/halls
+/api/projections
+/api/tickets
+/api/orders
+```
+
+---
+
+# Future Improvements
+
+- Add refresh tokens
+- Add real logout with refresh-token invalidation or JWT blacklist
+- Improve order authorization rules
+- Add admin protection for booking-management routes if needed
+- Add seat availability endpoints
+- Add recommendation-service endpoints
 - Add unit tests for service layer
 - Add integration tests with test database
 - Add database migrations
@@ -917,6 +1271,4 @@ docker compose up
 - Add CI/CD pipeline
 - Add Swagger/OpenAPI documentation
 - Improve logging with request IDs
-- Add role-based authorization
-- Add payment flow for tickets
 - Add event-driven communication between services
