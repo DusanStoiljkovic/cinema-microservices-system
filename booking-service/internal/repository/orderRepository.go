@@ -5,8 +5,10 @@ import (
 	"booking-service/internal/utils"
 	"context"
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type OrderRepository struct {
@@ -68,68 +70,118 @@ func (repo *OrderRepository) Create(ctx context.Context, order *models.Order) (*
 	}
 
 	err := repo.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Provera da li ima dovoljno slobodnih mesta na toj projekciji
-		var reservedTickets []*models.Ticket
+		projectionID := order.Tickets[0].ProjectionID
 
-		if err := tx.Where("projection_id = ?", order.Tickets[0].ProjectionID).Find(&reservedTickets).Error; err != nil {
-			return err
+		// Svi tiketi u jednom orderu moraju biti za istu projekciju
+		for i := range order.Tickets {
+			if order.Tickets[i].ProjectionID != projectionID {
+				return utils.NewInvalidInput(
+					"All tickets must be for the same projection",
+					errors.New("OrderRepository.Create -> tickets have different projection_id"),
+				)
+			}
 		}
 
+		// Zakljucavamo konkretnu projekciju
 		projection := &models.Projection{}
 
-		if err := tx.Select("id", "hall_id").First(projection, order.Tickets[0].ProjectionID).Error; err != nil {
+		if err := tx.
+			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Select("id", "hall_id", "price").
+			First(projection, projectionID).Error; err != nil {
 			return err
 		}
 
+		// Uzimamo kapacitet sale
 		hall := &models.Hall{}
 
-		if err := tx.Select("id", "capacity").First(hall, projection.HallID).Error; err != nil {
+		if err := tx.
+			Select("id", "capacity").
+			First(hall, projection.HallID).Error; err != nil {
 			return err
 		}
 
-		if (int(hall.Capacity) - len(reservedTickets)) < len(order.Tickets) {
-			return utils.NewConflict("There are no enough seats.", errors.New("OrderRepository.Create -> not enough seats for this projection"))
-		}
-
-		// Racuna TotalPrice
-		var totalPrice uint = 0
+		// Provera da li su poslata sedista validna i da nema duplikata u request
+		requestedSeatsMap := make(map[uint]bool)
+		requestedSeatNumbers := make([]uint, 0, len(order.Tickets))
 
 		for i := range order.Tickets {
-			ticket := &order.Tickets[i]
+			seatNumber := order.Tickets[i].SeatNumber
 
-			projection := &models.Projection{}
-
-			if err := tx.
-				Select("id", "price").
-				First(projection, ticket.ProjectionID).Error; err != nil {
-				return err
+			if seatNumber == 0 || seatNumber > hall.Capacity {
+				return utils.NewInvalidInput(
+					"Invalid seat number",
+					errors.New("OrderRepository.Create -> invalid seat number"),
+				)
 			}
 
-			totalPrice += uint(projection.Price)
+			if requestedSeatsMap[seatNumber] {
+				return utils.NewInvalidInput(
+					"Duplicate seat number in order",
+					errors.New("OrderRepository.Create -> duplicate seat number in request"),
+				)
+			}
+
+			requestedSeatsMap[seatNumber] = true
+			requestedSeatNumbers = append(requestedSeatNumbers, seatNumber)
 		}
 
-		order.TotalPrice = totalPrice
+		// Provera koliko vec ima rezervisanih tiketa za projekciju
+		var reservedTicketsCount int64
+
+		if err := tx.
+			Model(&models.Ticket{}).
+			Where("projection_id = ?", projectionID).
+			Count(&reservedTicketsCount).Error; err != nil {
+			return err
+		}
+
+		if int(hall.Capacity)-int(reservedTicketsCount) <= len(order.Tickets) {
+			return utils.NewConflict(
+				"There are not enough seats.",
+				errors.New("OrderRepository.Create -> not enough seats for this projection"),
+			)
+		}
+
+		// Provera da li su trazena sedišta vec zauzeta
+		var takenSeats []uint
+
+		if err := tx.
+			Model(&models.Ticket{}).
+			Where("projection_id = ? AND seat_number IN ?", projectionID, requestedSeatNumbers).
+			Pluck("seat_number", &takenSeats).Error; err != nil {
+			return err
+		}
+
+		if len(takenSeats) > 0 {
+			return utils.NewConflict(
+				fmt.Sprintf("Seat numbers are not available: %v", takenSeats),
+				errors.New("OrderRepository.Create -> seat numbers are not available"),
+			)
+		}
+
+		// Izracunavanje cene
+		order.TotalPrice = uint(projection.Price) * uint(len(order.Tickets))
 
 		// Kreiranje
 		tickets := order.Tickets
 		order.Tickets = nil
 
-		// Pravimo prvo Order(kako bi u ticket mogli da ubacimo order_id)
+		// Prvo kreiramo order da bismo dobili order.ID
 		if err := tx.Create(order).Error; err != nil {
 			return err
 		}
 
-		// Dodeljujemo im order_id
+		// Dodeljujemo order_id svakom tiketu
 		for i := range tickets {
 			tickets[i].OrderID = order.ID
 		}
 
-		// Ovde radimo Batch Insert
+		// Batch insert tiketa
 		if err := tx.Create(&tickets).Error; err != nil {
 			return err
 		}
 
-		// Dodeljujemo tikete orderu
 		order.Tickets = tickets
 
 		return nil
