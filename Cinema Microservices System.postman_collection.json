@@ -1,0 +1,1222 @@
+{
+	"info": {
+		"_postman_id": "f840f991-d0c6-4f2e-8afb-06766eadf653",
+		"name": "Cinema Microservices System",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32687461"
+	},
+	"item": [
+		{
+			"name": "API Gateway",
+			"item": [
+				{
+					"name": "user-service",
+					"item": [
+						{
+							"name": "Get All Users",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						},
+						{
+							"name": "Get User By Id",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3Nzk4OTA5OCwidXNlcklEIjoxfQ.p_2FpCgAYPwFd8T_rIYgfhs8ox8qrC0qAAftFLIKdmE",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/users/1",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Me",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3Nzk4OTA5OCwidXNlcklEIjoxfQ.p_2FpCgAYPwFd8T_rIYgfhs8ox8qrC0qAAftFLIKdmE",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/users/me",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"me"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Register",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"Name\": \"Dusan Stoiljkovic\",\n    \"Email\": \"dusan@gmail.com\",\n    \"Password\": \"dusan123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/users/register",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"register"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Login",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Role",
+										"value": "admin",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"Email\": \"dusan@gmail.com\",\n    \"Password\": \"dusan123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/api/users/login",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"api",
+										"users",
+										"login"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update User",
+							"request": {
+								"method": "PUT",
+								"header": []
+							},
+							"response": []
+						},
+						{
+							"name": "Delete User",
+							"request": {
+								"method": "DELETE",
+								"header": []
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "movie-service",
+					"item": [
+						{
+							"name": "Movies",
+							"item": [
+								{
+									"name": "Search Movies",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Get All Movies",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "\n"
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Movie By Id",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Movies By Genre",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Create Movie",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwiZXhwIjoxNzc3NzQxMDg2LCJ1c2VySUQiOjF9.kvxkMVNstZlLrFPJ0nwNy-KeHstdozGKQR5dtVsPRUA",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"title\": \"American Gangster\",\n    \"description\": \"A thief who steals corporate secrets through dream-sharing technology.\",\n    \"year\": 2002,\n    \"image_url\": \"https://example.com/inception.jpg\",\n    \"duration\": 180,\n    \"genre_ids\": [1, 2, 6]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Movie By Id",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"title\": \"American Gangster\",\n    \"description\": \"A thief who steals corporate secrets through dream-sharing technology.\",\n    \"year\": 2002,\n    \"image_url\": \"https://example.com/inception.jpg\",\n    \"duration\": 200,\n    \"rating\": 7.0,\n    \"genre_ids\": [1, 2]\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Movie By Id",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/3",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"3"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Genres",
+							"item": [
+								{
+									"name": "Get All Genres",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/genres",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"genres"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create Genre",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"romance\"\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/genres",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"genres"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Genre By Id",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies/genres/2",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies",
+												"genres",
+												"2"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Movie-Genre Relations",
+							"item": [
+								{
+									"name": "Get Relation By Movie Id",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies/1/genres",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies",
+												"1",
+												"genres"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create Relation",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies/1/genres/3",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies",
+												"1",
+												"genres",
+												"3"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Relation",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/movies/1/genres/2",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"movies",
+												"1",
+												"genres",
+												"2"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "booking-service",
+					"item": [
+						{
+							"name": "Hall",
+							"item": [
+								{
+									"name": "Get All Halls",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImR1c2FuQGdtYWlsLmNvbSIsImV4cCI6MTc3NzM4NjA1NSwidXNlcklEIjoxfQ.olGBqYIz6Xtg8o-mIrBS30NIyHfbQWoQkxp9vgPZZIg",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/halls",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"halls"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Projections By Hall",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Get Halls By ID",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwiZXhwIjoxNzc3NzQxMDg2LCJ1c2VySUQiOjF9.kvxkMVNstZlLrFPJ0nwNy-KeHstdozGKQR5dtVsPRUA",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": ""
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/halls/4",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"halls",
+												"4"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create Hall",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwiZXhwIjoxNzc3NzQxMDg2LCJ1c2VySUQiOjF9.kvxkMVNstZlLrFPJ0nwNy-KeHstdozGKQR5dtVsPRUA",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Sala 3\",\n    \"location\": \"Paracin\",\n    \"capacity\": 100\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/halls",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"halls"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Hall",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwiZXhwIjoxNzc3NzQxMDg2LCJ1c2VySUQiOjF9.kvxkMVNstZlLrFPJ0nwNy-KeHstdozGKQR5dtVsPRUA",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"name\": \"Sala 1\",\n    \"location\": \"Paracin\",\n    \"capacity\": 500\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/halls/4",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"halls",
+												"4"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Hall",
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Authorization",
+												"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwiZXhwIjoxNzc3NzQxMDg2LCJ1c2VySUQiOjF9.kvxkMVNstZlLrFPJ0nwNy-KeHstdozGKQR5dtVsPRUA",
+												"type": "text",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "\n"
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/halls/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"halls",
+												"1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Projections",
+							"item": [
+								{
+									"name": "Get All Projections",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "http://localhost:8080/api/projections",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"projections"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Projection By ID",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "http://localhost:8080/api/projections/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"projections",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Projections By MovieID",
+									"protocolProfileBehavior": {
+										"disableBodyPruning": true
+									},
+									"request": {
+										"method": "GET",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/projections/movie/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"projections",
+												"movie",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Projections By HallID",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Create Projection",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"movie_id\": 1,\n  \"hall_id\": 4,\n  \"start_time\": \"2026-05-05T18:00:00+02:00\",\n  \"end_time\": \"2026-05-05T20:00:00+02:00\",\n  \"price\": 500\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/projections",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"projections"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Projection",
+									"request": {
+										"method": "PUT",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"movie_id\": 1,\n  \"hall_id\": 4,\n  \"start_time\": \"2026-05-05T18:00:00+02:00\",\n  \"end_time\": \"2026-05-05T20:00:00+02:00\",\n  \"price\": 600\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/projections/3",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"projections",
+												"3"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Projection",
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"movie_id\": 1,\n  \"hall_id\": 4,\n  \"start_time\": \"2026-05-05T18:00:00+02:00\",\n  \"end_time\": \"2026-05-05T20:00:00+02:00\",\n  \"price\": 600\n}"
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/projections/3",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"projections",
+												"3"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Tickets",
+							"item": [
+								{
+									"name": "Get All Tickets",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "http://localhost:8080/api/tickets",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"tickets"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Ticket By ID",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "http://localhost:8080/api/tickets/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"tickets",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Ticket By UserID",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "http://localhost:8080/api/tickets/users/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"tickets",
+												"users",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Tickets By ProjectionID",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "http://localhost:8080/api/tickets/projections/1",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"tickets",
+												"projections",
+												"1"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get All Tickets By OrderID",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Create Ticket",
+									"request": {
+										"method": "POST",
+										"header": [],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n    \"order_id\": 1,\n    \"projection_id\": 1,\n    \"seat_number\": 1\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "http://localhost:8080/api/tickets",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8080",
+											"path": [
+												"api",
+												"tickets"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Cancel Ticket",
+									"request": {
+										"method": "PATCH",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Ticket",
+									"request": {
+										"method": "DELETE",
+										"header": []
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Seat",
+							"item": [
+								{
+									"name": "Get Reserved Seats By ProjectionID",
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": ""
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Paid Seats By ProjectionID",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								}
+							]
+						},
+						{
+							"name": "Orders",
+							"item": [
+								{
+									"name": "Get All Orders",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Get Order By ID",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Get Orders By UserID",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Get My Orders",
+									"request": {
+										"method": "GET",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Create Order",
+									"request": {
+										"method": "POST",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Pay Order",
+									"request": {
+										"method": "PATCH",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Cancel Order",
+									"request": {
+										"method": "PATCH",
+										"header": []
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Order",
+									"request": {
+										"method": "DELETE",
+										"header": []
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "recommendation-service",
+					"item": [
+						{
+							"name": "Get Recommendations By UserID",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						},
+						{
+							"name": "Get My Recommendations",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						},
+						{
+							"name": "Get Similar Movies",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		}
+	]
+}
