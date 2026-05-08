@@ -29,11 +29,11 @@ func RegisterRouter(userHandler UserHandler) http.Handler {
 				r.Use(middleware.JwtAuthMiddleware)
 				r.Get("/me", middleware.ErrorHandler(userHandler.HandleGetMe))
 				r.Get("/{id}", middleware.ErrorHandler(userHandler.HandleGetUserByID))
+				r.Put("/", middleware.ErrorHandler(userHandler.HandleUpdateUser))
 
 				r.Group(func(r chi.Router) {
 					r.Use(middleware.RequireAdmin)
 					r.Get("/", middleware.ErrorHandler(userHandler.HandleGetAllUsers))
-					r.Put("/{id}", middleware.ErrorHandler(userHandler.HandleUpdateUser))
 					r.Delete("/{id}", middleware.ErrorHandler(userHandler.HandleDeleteUser))
 				})
 			})
