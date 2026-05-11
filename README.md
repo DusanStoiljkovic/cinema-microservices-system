@@ -6,6 +6,9 @@ The system is designed for managing users, movies, genres, halls, projections, t
 
 ---
 
+<img width="1518" height="1036" alt="dbDiagram" src="https://github.com/user-attachments/assets/5cc750e0-5f61-426d-a25d-e746ba7d9a8e" />
+
+
 ## Architecture
 
 The system is divided into several services:
